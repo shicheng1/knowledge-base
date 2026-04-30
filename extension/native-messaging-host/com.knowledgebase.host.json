@@ -1,0 +1,7 @@
+{
+  "name": "com.knowledgebase.host",
+  "description": "知识库桌面应用 Native Messaging Host",
+  "path": "C:\\Users\\<user>\\AppData\\Local\\KnowledgeBase\\host.bat",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://<extension-id>/"]
+}

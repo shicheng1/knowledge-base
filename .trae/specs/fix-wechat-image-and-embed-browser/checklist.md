@@ -1,0 +1,15 @@
+- [x] Chrome 扩展 background.js 的 fetchImage 消息处理正确返回 base64 DataURL
+- [x] content.js 微信图片提取通过 background.js 代理获取 base64，非微信图片保留原始 URL
+- [x] NativeMessage 接口 images 数组包含可选 dataUrl 字段
+- [x] image-downloader.ts 的 saveBase64Image 函数能正确解码 base64 并保存为本地文件
+- [x] native-messaging.ts 优先使用 dataUrl 保存图片，无 dataUrl 时回退到后端直接下载
+- [x] content-extractor.ts 中不再需要微信 data-src 预处理（已由扩展处理）
+- [x] Electron 注册 local-image:// 自定义协议，能正确读取本地文件返回图片
+- [x] editor-image.service.ts 返回 local-image:// 协议路径
+- [x] Markdown 预览中 local-image:// 协议图片正确显示（不是小图标）
+- [x] TipTap 编辑器中 local-image:// 协议图片正确显示
+- [x] ItemDetailView 详情页有 source_url 的条目显示"浏览原文"按钮
+- [x] 点击"浏览原文"按钮展开内嵌 webview，能正常加载公众号文章及图片
+- [x] 内嵌浏览器可关闭收起
+- [x] CHANGELOG.md 包含 v1.2.2 版本记录
+- [x] npm run build 构建成功无错误

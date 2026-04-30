@@ -1,0 +1,202 @@
+import { Readability } from '@mozilla/readability'
+import { JSDOM } from 'jsdom'
+import TurndownService from 'turndown'
+import https from 'https'
+import http from 'http'
+import { URL } from 'url'
+
+export interface ExtractedContent {
+  title: string
+  content: string        // Markdown
+  contentHtml: string    // Cleaned HTML
+  summary: string
+  author: string | null
+  siteName: string | null
+  publishDate: string | null
+  topImage: string | null
+}
+
+/**
+ * Extract structured content from raw HTML using Readability + Turndown.
+ * Returns partial results if Readability parsing fails.
+ */
+export async function extractFromHtml(
+  html: string,
+  url: string
+): Promise<ExtractedContent> {
+  const dom = new JSDOM(html, { url })
+  const document = dom.window.document
+
+  // Attempt Readability parsing
+  const reader = new Readability(document)
+  let article: ReturnType<typeof reader.parse> | null = null
+
+  try {
+    article = reader.parse()
+  } catch (err) {
+    console.warn('[ContentExtractor] Readability parsing failed, falling back to raw content:', err)
+  }
+
+  const turndown = new TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced',
+  })
+
+  if (article) {
+    const markdown = turndown.turndown(article.content)
+
+    // Generate a simple summary from the first 200 chars of plain text
+    const tempDiv = dom.window.document.createElement('div')
+    tempDiv.innerHTML = article.content
+    const plainText = tempDiv.textContent || ''
+    const summary = plainText.trim().slice(0, 200).replace(/\s+/g, ' ') + (plainText.length > 200 ? '...' : '')
+
+    return {
+      title: article.title || document.title || 'Untitled',
+      content: markdown,
+      contentHtml: article.content,
+      summary,
+      author: article.byline || null,
+      siteName: article.siteName || null,
+      publishDate: article.publishedTime || null,
+      topImage: (article as any).topImage || null,
+    }
+  }
+
+  // Fallback: extract what we can from the raw document
+  const title = document.title || 'Untitled'
+  const metaDesc = document.querySelector('meta[name="description"]')
+  const summary = metaDesc?.getAttribute('content') || ''
+
+  const body = document.body
+  const rawHtml = body ? body.innerHTML : ''
+  const markdown = turndown.turndown(rawHtml)
+
+  const authorMeta = document.querySelector('meta[name="author"]')
+  const ogSiteName = document.querySelector('meta[property="og:site_name"]')
+  const articlePublished = document.querySelector('meta[property="article:published_time"]')
+  const ogImage = document.querySelector('meta[property="og:image"]')
+
+  return {
+    title,
+    content: markdown,
+    contentHtml: rawHtml,
+    summary,
+    author: authorMeta?.getAttribute('content') || null,
+    siteName: ogSiteName?.getAttribute('content') || null,
+    publishDate: articlePublished?.getAttribute('content') || null,
+    topImage: ogImage?.getAttribute('content') || null,
+  }
+}
+
+/**
+ * Fetch HTML from a URL and extract structured content.
+ * Handles redirects, encoding detection, timeouts, and network errors.
+ */
+export async function extractFromUrl(url: string): Promise<ExtractedContent> {
+  const parsedUrl = new URL(url)
+  const client = parsedUrl.protocol === 'https:' ? https : http
+
+  const html = await fetchUrlContent(url, client)
+
+  return extractFromHtml(html, url)
+}
+
+/**
+ * Fetch raw HTML string from a URL with redirect handling and timeout.
+ */
+function fetchUrlContent(
+  url: string,
+  client: typeof https | typeof http
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const timeoutMs = 10_000
+    const maxRedirects = 5
+    let redirectCount = 0
+
+    const makeRequest = (currentUrl: string) => {
+      const req = client.get(currentUrl, { timeout: timeoutMs }, (res) => {
+        // Handle redirects
+        if (
+          res.statusCode &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
+          redirectCount++
+          if (redirectCount > maxRedirects) {
+            reject(new Error(`Too many redirects (>${maxRedirects}) for ${url}`))
+            return
+          }
+
+          let redirectUrl: string
+          try {
+            redirectUrl = new URL(res.headers.location, currentUrl).href
+          } catch {
+            reject(new Error(`Invalid redirect URL: ${res.headers.location}`))
+            return
+          }
+
+          // Switch client if protocol changes (http -> https or vice versa)
+          const redirectParsed = new URL(redirectUrl)
+          const redirectClient = redirectParsed.protocol === 'https:' ? https : http
+          makeRequest(redirectUrl)
+          return
+        }
+
+        if (res.statusCode && res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode} for ${url}`))
+          return
+        }
+
+        // Detect encoding from Content-Type or meta tags
+        const contentType = res.headers['content-type'] || ''
+        const charsetMatch = contentType.match(/charset=([^\s;]+)/i)
+        const encoding = charsetMatch ? charsetMatch[1] : 'utf-8'
+
+        // Collect body chunks
+        const chunks: Buffer[] = []
+        res.on('data', (chunk: Buffer) => {
+          chunks.push(chunk)
+        })
+
+        res.on('end', () => {
+          const rawBuffer = Buffer.concat(chunks)
+
+          // If the encoding is not utf-8, try to decode with iconv-lite if available
+          if (encoding.toLowerCase() !== 'utf-8') {
+            try {
+              // Dynamic import to avoid hard dependency
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              const iconv = require('iconv-lite')
+              resolve(iconv.decode(rawBuffer, encoding))
+              return
+            } catch {
+              // iconv-lite not available, fall back to utf-8
+              console.warn(
+                `[ContentExtractor] iconv-lite not available, falling back to utf-8 for encoding ${encoding}`
+              )
+            }
+          }
+
+          resolve(rawBuffer.toString('utf-8'))
+        })
+
+        res.on('error', (err: Error) => {
+          reject(new Error(`Response error for ${url}: ${err.message}`))
+        })
+      })
+
+      req.on('timeout', () => {
+        req.destroy()
+        reject(new Error(`Request timed out after ${timeoutMs}ms for ${url}`))
+      })
+
+      req.on('error', (err: Error) => {
+        reject(new Error(`Network error fetching ${url}: ${err.message}`))
+      })
+    }
+
+    makeRequest(url)
+  })
+}

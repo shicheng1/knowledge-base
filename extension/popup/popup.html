@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知识库保存助手</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="header-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
+      </div>
+      <h1 class="header-title">保存到知识库</h1>
+    </header>
+
+    <!-- 页面信息 -->
+    <section class="page-info">
+      <div class="form-group">
+        <label class="form-label" for="page-title">页面标题</label>
+        <input type="text" id="page-title" class="form-input" placeholder="页面标题" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="page-url">页面地址</label>
+        <input type="url" id="page-url" class="form-input" placeholder="https://" readonly>
+      </div>
+    </section>
+
+    <!-- 保存选项 -->
+    <section class="save-options">
+      <div class="form-group">
+        <label class="form-label" for="folder-select">保存到文件夹</label>
+        <select id="folder-select" class="form-select">
+          <option value="">默认文件夹</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tag-input">标签</label>
+        <div class="tag-input-wrapper">
+          <div class="tag-list" id="tag-list"></div>
+          <input type="text" id="tag-input" class="form-input tag-input" placeholder="输入标签后按回车添加" autocomplete="off">
+        </div>
+        <div class="tag-suggestions" id="tag-suggestions">
+          <!-- 标签建议会动态填充 -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="note-input">备注</label>
+        <textarea id="note-input" class="form-textarea" placeholder="添加备注（可选）" rows="2"></textarea>
+      </div>
+    </section>
+
+    <!-- 操作按钮 -->
+    <div class="actions">
+      <button id="save-btn" class="btn btn-primary">
+        <span class="btn-text">保存</span>
+        <span class="btn-loading">
+          <span class="spinner"></span>
+          保存中...
+        </span>
+      </button>
+    </div>
+
+    <!-- 状态消息 -->
+    <div id="status-message" class="status-message hidden"></div>
+
+    <!-- 底部链接 -->
+    <footer class="footer">
+      <a href="#" id="open-settings" class="footer-link">打开桌面应用设置</a>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

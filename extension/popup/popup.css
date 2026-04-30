@@ -1,0 +1,442 @@
+/**
+ * 知识库保存助手 - Popup 样式
+ *
+ * 现代简洁的弹出窗口设计，宽度 360px。
+ */
+
+/* ============================================================
+   基础重置与变量
+   ============================================================ */
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
+  --success: #22c55e;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+  --error: #ef4444;
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --warning: #f59e0b;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --transition: 150ms ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gray-800);
+  background: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   容器布局
+   ============================================================ */
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* ============================================================
+   头部
+   ============================================================ */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* ============================================================
+   页面信息区域
+   ============================================================ */
+.page-info {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--gray-50);
+}
+
+/* ============================================================
+   保存选项区域
+   ============================================================ */
+.save-options {
+  padding: 12px 16px;
+}
+
+/* ============================================================
+   表单元素
+   ============================================================ */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-bottom: 4px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--gray-800);
+  background: #fff;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.form-input[readonly] {
+  color: var(--gray-500);
+  background: var(--gray-100);
+  cursor: default;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--gray-400);
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 48px;
+  max-height: 120px;
+  font-family: inherit;
+}
+
+/* ============================================================
+   标签输入
+   ============================================================ */
+.tag-input-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  min-height: 34px;
+  align-items: center;
+}
+
+.tag-input-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.tag-item .tag-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: background var(--transition);
+}
+
+.tag-item .tag-remove:hover {
+  background: rgba(79, 70, 229, 0.2);
+}
+
+.tag-input {
+  flex: 1;
+  min-width: 80px;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 4px !important;
+  font-size: 13px;
+  outline: none;
+}
+
+.tag-input::placeholder {
+  color: var(--gray-400);
+}
+
+/* 标签建议 */
+.tag-suggestions {
+  display: none;
+  max-height: 120px;
+  overflow-y: auto;
+  margin-top: 4px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.tag-suggestions.visible {
+  display: block;
+}
+
+.tag-suggestion-item {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.tag-suggestion-item:hover {
+  background: var(--gray-100);
+}
+
+/* ============================================================
+   操作按钮
+   ============================================================ */
+.actions {
+  padding: 0 16px 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 9px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition);
+  outline: none;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--primary);
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-text {
+  display: inline;
+}
+
+.btn-loading {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn.is-loading .btn-text {
+  display: none;
+}
+
+.btn.is-loading .btn-loading {
+  display: inline-flex;
+}
+
+/* ============================================================
+   加载动画
+   ============================================================ */
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   状态消息
+   ============================================================ */
+.status-message {
+  margin: 0 16px 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.4;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.status-message.hidden {
+  display: none;
+}
+
+.status-message.success {
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: #166534;
+}
+
+.status-message.error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: #991b1b;
+}
+
+.status-message .status-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+/* ============================================================
+   底部
+   ============================================================ */
+.footer {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--gray-100);
+  text-align: center;
+}
+
+.footer-link {
+  font-size: 12px;
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.footer-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* ============================================================
+   滚动条美化
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
