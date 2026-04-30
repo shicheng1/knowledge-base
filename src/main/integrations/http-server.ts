@@ -5,6 +5,7 @@ import { folderRepo } from '../database/repositories/folder.repo'
 import { importFromHtml } from '../services/import-service'
 import { archiveFullPage } from '../services/full-archiver.service'
 import { itemRepo } from '../database/repositories/item.repo'
+import { processImagesAndReplaceHtml } from '../services/image-downloader'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,6 +17,8 @@ interface SavePageRequest {
   html: string
   folderId?: number
   tags?: string[]
+  isWechat?: boolean
+  images?: Array<{ src: string; alt?: string; dataUrl?: string; variants?: string[] }>
 }
 
 interface ApiResponse {
@@ -98,8 +101,10 @@ async function handleSavePage(req: http.IncomingMessage, res: http.ServerRespons
       return
     }
 
+    const html = await processImagesAndReplaceHtml(body.html, body.images, body.url, body.isWechat)
+
     const itemId = await importFromHtml(
-      body.html,
+      html,
       body.url,
       body.folderId,
       body.tags

@@ -5,16 +5,6 @@
  */
 
 /**
- * 检测是否为微信公众号文章
- */
-function isWechatArticle() {
-  return (
-    window.location.hostname === 'mp.weixin.qq.com' &&
-    document.querySelector('#js_content') !== null
-  );
-}
-
-/**
  * 提取微信公众号文章内容
  */
 async function getWechatArticleContent() {
@@ -35,18 +25,27 @@ async function getWechatArticleContent() {
   const images = [];
   const imgElements = contentEl.querySelectorAll('img');
   for (const img of imgElements) {
-    const src = img.getAttribute('data-src') || img.getAttribute('src') || '';
-    if (src && !src.startsWith('data:')) {
+    const dataSrc = (img.getAttribute('data-src') || '').trim();
+    const rawSrc = (img.getAttribute('src') || '').trim();
+    const variants = [...new Set(
+      [dataSrc, rawSrc].filter(
+        (u) => /^https?:\/\/.*\.qpic\.cn\//i.test(u),
+      ),
+    )];
+    const fetchUrl =
+      /\.qpic\.cn\//i.test(dataSrc) ? dataSrc : /\.qpic\.cn\//i.test(rawSrc) ? rawSrc : variants[0] || '';
+
+    if (fetchUrl) {
       let dataUrl = '';
       try {
         const response = await new Promise((resolve) => {
-          chrome.runtime.sendMessage({ action: 'fetchImage', url: src }, resolve);
+          chrome.runtime.sendMessage({ action: 'fetchImage', url: fetchUrl }, resolve);
         });
         dataUrl = response?.dataUrl || '';
       } catch (e) {
-        console.warn('获取图片base64失败:', src, e);
+        console.warn('获取图片base64失败:', fetchUrl, e);
       }
-      images.push({ src, alt: img.getAttribute('alt') || '', dataUrl });
+      images.push({ src: fetchUrl, variants, alt: img.getAttribute('alt') || '', dataUrl });
     }
   }
 
@@ -72,9 +71,24 @@ async function getWechatArticleContent() {
  * @returns {Object} 页面内容对象
  */
 async function getPageContent() {
-  if (isWechatArticle()) {
+  if (window.location.hostname === 'mp.weixin.qq.com') {
     const wechatContent = await getWechatArticleContent();
     if (wechatContent) return wechatContent;
+    return {
+      title: document.querySelector('#activity-name')?.textContent?.trim() || document.title,
+      url: window.location.href,
+      html: '<p>正文区域未就绪，请等文章加载完成后重试保存。</p>',
+      textContent: '',
+      summary: '',
+      author: document.querySelector('#js_name')?.textContent?.trim() || '',
+      publishDate: document.querySelector('#publish_time')?.textContent?.trim() || '',
+      images: [],
+      isWechat: true,
+      selectedText: window.getSelection().toString() || '',
+      description: '',
+      keywords: '',
+      favicon: '',
+    };
   }
 
   return {
@@ -96,7 +110,7 @@ async function getPageContent() {
  * 提取页面中的图片列表
  */
 function extractPageImages() {
-  const images: Array<{ src: string; alt: string }> = [];
+  const images = [];
   document.querySelectorAll('img').forEach((img) => {
     const src = img.getAttribute('src') || img.getAttribute('data-src') || '';
     if (src && !src.startsWith('data:') && src.length < 2000) {
@@ -157,38 +171,41 @@ function getFavicon() {
   return '';
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'getPageContent') {
-    getPageContent()
-      .then(content => sendResponse({ success: true, data: content }))
-      .catch(error => sendResponse({ success: false, error: error.message }));
-    return true;
-  }
+if (!globalThis.__KB_CONTENT_LISTENER__) {
+  globalThis.__KB_CONTENT_LISTENER__ = true;
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === 'getPageContent') {
+      getPageContent()
+        .then(content => sendResponse({ success: true, data: content }))
+        .catch(error => sendResponse({ success: false, error: error.message }));
+      return true;
+    }
 
-  if (message.action === 'getSelectedText') {
-    sendResponse({
-      success: true,
-      data: { selectedText: window.getSelection().toString() },
-    });
-    return true;
-  }
-
-  if (message.action === 'getSelectionInfo') {
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
+    if (message.action === 'getSelectedText') {
       sendResponse({
         success: true,
-        data: {
-          selectedText: selection.toString(),
-          selectedHtml: getSelectionHtml(selection),
-        },
+        data: { selectedText: window.getSelection().toString() },
       });
-    } else {
-      sendResponse({ success: true, data: { selectedText: '', selectedHtml: '' } });
+      return true;
     }
-    return true;
-  }
-});
+
+    if (message.action === 'getSelectionInfo') {
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        sendResponse({
+          success: true,
+          data: {
+            selectedText: selection.toString(),
+            selectedHtml: getSelectionHtml(selection),
+          },
+        });
+      } else {
+        sendResponse({ success: true, data: { selectedText: '', selectedHtml: '' } });
+      }
+      return true;
+    }
+  });
+}
 
 function getSelectionHtml(selection) {
   if (selection.rangeCount === 0) return '';

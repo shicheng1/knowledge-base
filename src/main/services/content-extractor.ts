@@ -4,6 +4,7 @@ import TurndownService from 'turndown'
 import https from 'https'
 import http from 'http'
 import { URL } from 'url'
+import { processImagesAndReplaceHtml } from './image-downloader'
 
 export interface ExtractedContent {
   title: string
@@ -43,18 +44,19 @@ export async function extractFromHtml(
   })
 
   if (article) {
-    const markdown = turndown.turndown(article.content)
+    const normalizedHtml = await normalizeHtmlImages(article.content, url)
+    const markdown = turndown.turndown(normalizedHtml)
 
     // Generate a simple summary from the first 200 chars of plain text
     const tempDiv = dom.window.document.createElement('div')
-    tempDiv.innerHTML = article.content
+    tempDiv.innerHTML = normalizedHtml
     const plainText = tempDiv.textContent || ''
     const summary = plainText.trim().slice(0, 200).replace(/\s+/g, ' ') + (plainText.length > 200 ? '...' : '')
 
     return {
       title: article.title || document.title || 'Untitled',
       content: markdown,
-      contentHtml: article.content,
+      contentHtml: normalizedHtml,
       summary,
       author: article.byline || null,
       siteName: article.siteName || null,
@@ -70,7 +72,8 @@ export async function extractFromHtml(
 
   const body = document.body
   const rawHtml = body ? body.innerHTML : ''
-  const markdown = turndown.turndown(rawHtml)
+  const normalizedHtml = await normalizeHtmlImages(rawHtml, url)
+  const markdown = turndown.turndown(normalizedHtml)
 
   const authorMeta = document.querySelector('meta[name="author"]')
   const ogSiteName = document.querySelector('meta[property="og:site_name"]')
@@ -80,7 +83,7 @@ export async function extractFromHtml(
   return {
     title,
     content: markdown,
-    contentHtml: rawHtml,
+    contentHtml: normalizedHtml,
     summary,
     author: authorMeta?.getAttribute('content') || null,
     siteName: ogSiteName?.getAttribute('content') || null,
@@ -199,4 +202,68 @@ function fetchUrlContent(
 
     makeRequest(url)
   })
+}
+
+interface NormalizedImageInfo {
+  src: string
+  alt?: string
+  variants?: string[]
+}
+
+async function normalizeHtmlImages(html: string, pageUrl: string): Promise<string> {
+  if (!html.trim()) return html
+
+  const dom = new JSDOM(`<body>${html}</body>`)
+  const imgs = Array.from(dom.window.document.querySelectorAll('img'))
+  if (imgs.length === 0) return html
+
+  const imageInfos: NormalizedImageInfo[] = []
+  for (const img of imgs) {
+    const src = normalizeImageSrc(img, pageUrl)
+    if (!src) continue
+
+    img.setAttribute('src', src)
+    img.removeAttribute('srcset')
+    img.removeAttribute('data-src')
+
+    imageInfos.push({
+      src,
+      alt: img.getAttribute('alt') || undefined,
+      variants: [src],
+    })
+  }
+
+  const isWechat = /mp\.weixin\.qq\.com/i.test(pageUrl) || /qpic\.cn|mmbiz\.qpic\.cn/i.test(dom.serialize())
+  const processed = await processImagesAndReplaceHtml(
+    dom.window.document.body.innerHTML,
+    imageInfos,
+    pageUrl,
+    isWechat
+  )
+
+  if (!/<html[\s>]/i.test(processed)) return processed
+  const out = new JSDOM(processed)
+  return out.window.document.body.innerHTML || processed
+}
+
+function normalizeImageSrc(img: Element, pageUrl: string): string | null {
+  const candidate =
+    img.getAttribute('data-src') ||
+    img.getAttribute('data-original') ||
+    img.getAttribute('data-original-src') ||
+    img.getAttribute('src')
+
+  if (!candidate) return null
+  const trimmed = candidate.trim()
+  if (!trimmed) return null
+
+  if (/^data:/i.test(trimmed)) return trimmed
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  if (/^\/\//.test(trimmed)) return `https:${trimmed}`
+
+  try {
+    return new URL(trimmed, pageUrl).href
+  } catch {
+    return trimmed
+  }
 }

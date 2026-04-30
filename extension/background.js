@@ -57,6 +57,34 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+async function enrichWechatImages(pageContent) {
+  if (!pageContent?.isWechat || !pageContent.images?.length) return pageContent;
+  const out = [];
+  for (const img of pageContent.images) {
+    if (img.dataUrl || !img.src || img.src.startsWith('data:')) {
+      out.push(img);
+      continue;
+    }
+    let dataUrl = null;
+    try {
+      const res = await fetch(img.src, {
+        headers: { Referer: 'https://mp.weixin.qq.com/' },
+      });
+      const blob = await res.blob();
+      dataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      //
+    }
+    out.push(dataUrl ? { ...img, dataUrl } : img);
+  }
+  return { ...pageContent, images: out };
+}
+
 // ============================================================
 // 从标签页获取页面内容
 // 先注入 content.js，再通过消息获取 content.js 提取的内容
@@ -71,31 +99,89 @@ async function getPageContentFromTab(tabId) {
     console.warn('[知识库助手] 注入 content.js 失败，尝试内联提取:', e);
   }
 
-  return new Promise((resolve) => {
+  const fromMsg = await new Promise((resolve) => {
     chrome.tabs.sendMessage(tabId, { action: 'getPageContent' }, (response) => {
-      if (chrome.runtime.lastError || !response || !response.success) {
-        console.warn('[知识库助手] content.js 消息获取失败，使用内联提取');
-        fallbackGetContent(tabId).then(resolve);
+      if (chrome.runtime.lastError) {
+        resolve({ ok: false });
         return;
       }
-      resolve(response.data);
+      resolve({ ok: !!(response && response.success), data: response?.data });
     });
   });
+
+  let raw = null;
+  if (!fromMsg.ok) {
+    console.warn('[知识库助手] content.js 消息获取失败，使用内联提取');
+    raw = await fallbackGetContent(tabId);
+  } else {
+    raw = fromMsg.data;
+  }
+
+  return enrichWechatImages(raw);
 }
 
 async function fallbackGetContent(tabId) {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
-    func: () => ({
-      title: document.title,
-      url: window.location.href,
-      html: document.documentElement.outerHTML,
-      selectedText: window.getSelection().toString(),
-      isWechat: false,
-      images: [],
-      author: '',
-      publishDate: '',
-    })
+    func: () => {
+      const host = window.location.hostname;
+      const contentEl = document.querySelector('#js_content');
+      if (host === 'mp.weixin.qq.com' && contentEl) {
+        const title =
+          document.querySelector('#activity-name')?.textContent?.trim() ||
+          document.title;
+        const author =
+          document.querySelector('#js_name')?.textContent?.trim() || '';
+        const publishDate =
+          document.querySelector('#publish_time')?.textContent?.trim() || '';
+        const html = contentEl.innerHTML;
+        const images = [];
+        contentEl.querySelectorAll('img').forEach((img) => {
+          const src =
+            img.getAttribute('data-src') ||
+            img.getAttribute('src') ||
+            '';
+          if (src && !src.startsWith('data:')) {
+            images.push({ src, alt: img.getAttribute('alt') || '' });
+          }
+        });
+        return {
+          title,
+          url: window.location.href,
+          html,
+          selectedText: window.getSelection().toString(),
+          isWechat: true,
+          images,
+          author,
+          publishDate,
+        };
+      }
+      if (host === 'mp.weixin.qq.com') {
+        return {
+          title:
+            document.querySelector('#activity-name')?.textContent?.trim() ||
+            document.title,
+          url: window.location.href,
+          html: '<p>正文区域未就绪，请等文章加载完成后重试保存。</p>',
+          selectedText: window.getSelection().toString(),
+          isWechat: true,
+          images: [],
+          author: document.querySelector('#js_name')?.textContent?.trim() || '',
+          publishDate:
+            document.querySelector('#publish_time')?.textContent?.trim() || '',
+        };
+      }
+      return {
+        title: document.title,
+        url: window.location.href,
+        html: document.documentElement.outerHTML,
+        selectedText: window.getSelection().toString(),
+        isWechat: false,
+        images: [],
+        author: '',
+        publishDate: '',
+      };
+    },
   });
   return results[0]?.result || null;
 }
@@ -264,6 +350,8 @@ async function tryHttpSend(message) {
           html: message.data.html,
           folderId: message.data.folderId,
           tags: message.data.tags,
+          isWechat: message.data.isWechat,
+          images: message.data.images,
         })
       });
       if (response.ok) {

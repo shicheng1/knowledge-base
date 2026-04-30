@@ -147,6 +147,7 @@ const TipTapEditor: React.FC<TipTapEditorProps> = ({
       }),
       Image.configure({
         inline: false,
+        allowBase64: true,
         HTMLAttributes: {
           class: 'max-w-full rounded-lg',
         },

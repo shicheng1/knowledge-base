@@ -1,9 +1,8 @@
 import process from 'process'
 import { importFromHtml } from './import-service'
-import { downloadImagesToLocal, saveBase64Image } from './image-downloader'
+import { processImagesAndReplaceHtml } from './image-downloader'
 import { folderRepo } from '../database/repositories/folder.repo'
 import { tagRepo } from '../database/repositories/tag.repo'
-import { logger } from '../utils/logger'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,7 +18,7 @@ export interface NativeMessage {
     author?: string
     publishDate?: string
     isWechat?: boolean
-    images?: Array<{ src: string; alt?: string; dataUrl?: string }>
+    images?: Array<{ src: string; alt?: string; dataUrl?: string; variants?: string[] }>
     folderId?: number
     tags?: string[]
   }
@@ -248,52 +247,7 @@ async function handleSavePage(data: NativeMessage['data']): Promise<NativeRespon
       title = data.title || '微信公众号文章'
     }
 
-    if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-      const timestamp = Date.now()
-      const imageMap: Record<string, string> = {}
-
-      for (let i = 0; i < data.images.length; i++) {
-        const img = data.images[i]
-        try {
-          if (img.dataUrl) {
-            const localPath = saveBase64Image(img.dataUrl, timestamp, i)
-            if (localPath) {
-              imageMap[img.src] = localPath
-              logger.info(`保存base64图片成功: ${img.src} -> ${localPath}`)
-            }
-          }
-        } catch (err) {
-          logger.warn(`保存base64图片失败: ${img.src}`, err)
-        }
-      }
-
-      const needDownload = data.images.filter(img => !img.dataUrl && img.src && !img.src.startsWith('data:'))
-      if (needDownload.length > 0) {
-        try {
-          const downloadedMap = await downloadImagesToLocal(needDownload, data.url)
-          Object.assign(imageMap, downloadedMap)
-        } catch (imgErr) {
-          logger.warn('图片下载失败，继续保存:', imgErr)
-        }
-      }
-
-      for (const [originalSrc, localPath] of Object.entries(imageMap)) {
-        const escapedSrc = originalSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const fileUrl = `local-image:///${localPath.replace(/\\/g, '/')}`
-        html = html.replace(
-          new RegExp(`data-src\\s*=\\s*["']${escapedSrc}["']`, 'g'),
-          `src="${fileUrl}"`
-        )
-        html = html.replace(
-          new RegExp(`src\\s*=\\s*["']${escapedSrc}["']`, 'g'),
-          `src="${fileUrl}"`
-        )
-      }
-
-      if (data.isWechat) {
-        html = html.replace(/\s*data-src\s*=\s*["'][^"']*["']/g, '')
-      }
-    }
+    html = await processImagesAndReplaceHtml(html, data.images, data.url, data.isWechat)
 
     const tagNames = data.tags && data.tags.length > 0 ? data.tags : undefined
 
