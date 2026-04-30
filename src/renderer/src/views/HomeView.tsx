@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Star, FileText, Globe, BookOpen, StickyNote, Briefcase, Plus, Pin } from 'lucide-react';
+import { Star, FileText, Globe, BookOpen, StickyNote, Briefcase, Plus, Pin, Archive } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -124,6 +124,10 @@ const HomeView: React.FC<HomeViewProps> = ({ favoriteOnly = false }) => {
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<number | null>(null);
   const [folders, setFolders] = useState<any[]>([]);
   const [moveItemId, setMoveItemId] = useState<number | null>(null);
+
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [archiveUrl, setArchiveUrl] = useState('');
+  const [archiveBusy, setArchiveBusy] = useState(false);
 
   const handleCreateFile = useCallback(async (type: 'note' | 'md' | 'docx' | 'xlsx') => {
     setCreating(true);
@@ -388,6 +392,19 @@ const HomeView: React.FC<HomeViewProps> = ({ favoriteOnly = false }) => {
               <Plus className="h-4 w-4" />
               新建文件夹
             </button>
+            {!favoriteOnly && (
+              <button
+                type="button"
+                onClick={() => {
+                  setArchiveUrl('');
+                  setShowArchiveModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100"
+              >
+                <Archive className="h-4 w-4" />
+                完整网页存档
+              </button>
+            )}
             <div className="relative">
               <button
                 type="button"
@@ -764,6 +781,74 @@ const HomeView: React.FC<HomeViewProps> = ({ favoriteOnly = false }) => {
           </div>
         )}
       </div>
+      {showArchiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-800">完整网页存档</h3>
+            <p className="mb-4 text-xs text-gray-500">内联 CSS 与图片，离线可读</p>
+            <input
+              type="url"
+              value={archiveUrl}
+              onChange={(e) => setArchiveUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && archiveUrl.trim() && !archiveBusy) {
+                  e.preventDefault();
+                  void (async () => {
+                    setArchiveBusy(true);
+                    try {
+                      const r = await window.api.import.archiveUrl(archiveUrl.trim(), null);
+                      setShowArchiveModal(false);
+                      setArchiveUrl('');
+                      await loadItems();
+                      navigate(`/item/${r.id}`);
+                    } catch (err: any) {
+                      alert('存档失败: ' + (err?.message ?? '未知错误'));
+                    } finally {
+                      setArchiveBusy(false);
+                    }
+                  })();
+                }
+              }}
+              autoFocus
+              className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+              placeholder="https://…"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowArchiveModal(false);
+                  setArchiveUrl('');
+                }}
+                className="rounded-md px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                disabled={archiveBusy || !archiveUrl.trim()}
+                onClick={async () => {
+                  setArchiveBusy(true);
+                  try {
+                    const r = await window.api.import.archiveUrl(archiveUrl.trim(), null);
+                    setShowArchiveModal(false);
+                    setArchiveUrl('');
+                    await loadItems();
+                    navigate(`/item/${r.id}`);
+                  } catch (err: any) {
+                    alert('存档失败: ' + (err?.message ?? '未知错误'));
+                  } finally {
+                    setArchiveBusy(false);
+                  }
+                }}
+                className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {archiveBusy ? '存档中…' : '开始存档'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showNewFolder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="mx-4 w-full max-w-sm rounded-lg bg-white p-6 shadow-xl">
