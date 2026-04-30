@@ -6,7 +6,8 @@
   "permissions": ["activeTab", "scripting", "nativeMessaging", "contextMenus"],
   "host_permissions": [
     "https://mmbiz.qpic.cn/*",
-    "https://*.qpic.cn/*"
+    "https://*.qpic.cn/*",
+    "http://localhost:17321/*"
   ],
   "background": {
     "service_worker": "background.js"

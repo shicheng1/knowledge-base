@@ -9,6 +9,9 @@ import SettingsView from './views/SettingsView';
 import TrashView from './views/TrashView';
 import StatsView from './views/StatsView';
 import QuickCaptureView from './views/QuickCaptureView';
+import GraphView from './views/GraphView';
+import DailyNoteView from './views/DailyNoteView';
+import TodoView from './views/TodoView';
 
 const App: React.FC = () => {
   return (
@@ -26,6 +29,10 @@ const App: React.FC = () => {
             <Route path="favorites" element={<HomeView favoriteOnly />} />
             <Route path="trash" element={<TrashView />} />
             <Route path="stats" element={<StatsView />} />
+            <Route path="graph" element={<GraphView />} />
+            <Route path="daily" element={<DailyNoteView />} />
+            <Route path="daily/:date" element={<DailyNoteView />} />
+            <Route path="todos" element={<TodoView />} />
           </Route>
         </Routes>
       </HashRouter>

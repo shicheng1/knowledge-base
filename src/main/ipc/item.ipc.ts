@@ -479,6 +479,45 @@ export function registerItemHandlers(): void {
   });
 
   /**
+   * Get or create daily note.
+   * Channel: item:getOrCreateDailyNote
+   */
+  ipcMain.handle('item:getOrCreateDailyNote', async (_event, date: string): Promise<IpcResult<Item>> => {
+    try {
+      const item = await itemRepo.getOrCreateDailyNote(date);
+      return { success: true, data: item };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  /**
+   * Get all items containing TODO checkboxes.
+   * Channel: item:searchTodos
+   */
+  ipcMain.handle('item:searchTodos', async (): Promise<IpcResult<any[]>> => {
+    try {
+      const todos = await itemRepo.searchTodos();
+      return { success: true, data: todos };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  /**
+   * Get knowledge graph nodes & edges.
+   * Channel: item:getGraph
+   */
+  ipcMain.handle('item:getGraph', async (): Promise<IpcResult<{ nodes: any[]; edges: any[] }>> => {
+    try {
+      const graph = await linkRepo.getGraph();
+      return { success: true, data: graph };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  /**
    * Get all template items.
    * Channel: item:getTemplates
    */

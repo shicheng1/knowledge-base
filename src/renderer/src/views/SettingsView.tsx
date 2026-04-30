@@ -11,6 +11,9 @@ import {
   Globe,
   Upload,
   ScanLine,
+  Cloud,
+  GitBranch,
+  Archive,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -70,6 +73,30 @@ const SettingsView: React.FC = () => {
   /* OCR 开关 */
   const [ocrEnabled, setOcrEnabled] = useState(false);
 
+  /* WebDAV 配置 */
+  const [webdavCfg, setWebdavCfg] = useState({ url: '', username: '', password: '', remotePath: '/knowledge-base' });
+  const [webdavStatus, setWebdavStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [webdavBusy, setWebdavBusy] = useState(false);
+  const [webdavLastSyncAt, setWebdavLastSyncAt] = useState<string | null>(null);
+
+  /* Git 配置 */
+  const [gitCfg, setGitCfg] = useState({
+    remoteUrl: '',
+    branch: 'main',
+    username: '',
+    token: '',
+    authorEmail: '',
+    authorName: 'KnowledgeBase',
+  });
+  const [gitStatus, setGitStatus] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [gitBusy, setGitBusy] = useState(false);
+  const [gitLastSyncAt, setGitLastSyncAt] = useState<string | null>(null);
+
+  /* 完整网页存档 */
+  const [archiveUrl, setArchiveUrl] = useState('');
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [archiveResult, setArchiveResult] = useState<string | null>(null);
+
   /* 加载已有设置 */
   useEffect(() => {
     const loadSettings = async () => {
@@ -111,6 +138,15 @@ const SettingsView: React.FC = () => {
       } catch {
         setCtxRegistered(false);
       }
+
+      // 加载同步配置
+      try {
+        const status: any = await (window.api as any).sync?.getStatus?.();
+        if (status?.webdav?.config) setWebdavCfg(status.webdav.config);
+        if (status?.webdav?.lastSyncAt) setWebdavLastSyncAt(status.webdav.lastSyncAt);
+        if (status?.git?.config) setGitCfg(status.git.config);
+        if (status?.git?.lastSyncAt) setGitLastSyncAt(status.git.lastSyncAt);
+      } catch {}
     };
     loadSettings();
   }, []);
@@ -721,6 +757,326 @@ const SettingsView: React.FC = () => {
           {importResult && (
             <div className={`mt-3 rounded-md px-3 py-2 text-sm ${importResult.includes('失败') ? 'bg-yellow-50 text-yellow-700' : 'bg-green-50 text-green-700'}`}>
               {importResult}
+            </div>
+          )}
+        </section>
+
+        {/* ── WebDAV 同步 ─────────────────────────────────────── */}
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Cloud className="h-5 w-5 text-sky-500" />
+            <h2 className="text-lg font-semibold text-gray-800">WebDAV 备份/同步</h2>
+          </div>
+          <p className="mb-4 text-sm text-gray-500">
+            备份整库为 ZIP 推送到坚果云、Nextcloud 等 WebDAV 存储。
+            {webdavLastSyncAt && (
+              <span className="ml-2 text-xs text-gray-400">
+                上次备份：{new Date(webdavLastSyncAt).toLocaleString()}
+              </span>
+            )}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs text-gray-500">WebDAV URL</label>
+              <input
+                type="text"
+                value={webdavCfg.url}
+                onChange={(e) => setWebdavCfg({ ...webdavCfg, url: e.target.value })}
+                className={inputClass}
+                placeholder="https://dav.jianguoyun.com/dav/"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">用户名</label>
+              <input
+                type="text"
+                value={webdavCfg.username}
+                onChange={(e) => setWebdavCfg({ ...webdavCfg, username: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">密码 / 应用密码</label>
+              <input
+                type="password"
+                value={webdavCfg.password}
+                onChange={(e) => setWebdavCfg({ ...webdavCfg, password: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs text-gray-500">远端目录</label>
+              <input
+                type="text"
+                value={webdavCfg.remotePath}
+                onChange={(e) => setWebdavCfg({ ...webdavCfg, remotePath: e.target.value })}
+                className={inputClass}
+                placeholder="/knowledge-base"
+              />
+            </div>
+          </div>
+
+          {webdavStatus && (
+            <div
+              className={`mt-3 rounded-md px-3 py-2 text-sm ${
+                webdavStatus.ok ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              }`}
+            >
+              {webdavStatus.msg}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={webdavBusy}
+              onClick={async () => {
+                setWebdavBusy(true);
+                setWebdavStatus(null);
+                try {
+                  await (window.api as any).sync.saveWebdavConfig(webdavCfg);
+                  await (window.api as any).sync.webdavTest(webdavCfg);
+                  setWebdavStatus({ ok: true, msg: '连接成功' });
+                } catch (err: any) {
+                  setWebdavStatus({ ok: false, msg: err?.message ?? '连接失败' });
+                } finally {
+                  setWebdavBusy(false);
+                }
+              }}
+              className="rounded-md border border-sky-500 px-3 py-1.5 text-sm text-sky-600 hover:bg-sky-50 disabled:opacity-50"
+            >
+              {webdavBusy ? '处理中...' : '保存并测试连接'}
+            </button>
+            <button
+              type="button"
+              disabled={webdavBusy}
+              onClick={async () => {
+                setWebdavBusy(true);
+                setWebdavStatus(null);
+                try {
+                  const result = await (window.api as any).sync.webdavBackup(webdavCfg);
+                  setWebdavStatus({ ok: true, msg: `备份完成: ${result.remoteFile}` });
+                  setWebdavLastSyncAt(new Date().toISOString());
+                } catch (err: any) {
+                  setWebdavStatus({ ok: false, msg: err?.message ?? '备份失败' });
+                } finally {
+                  setWebdavBusy(false);
+                }
+              }}
+              className="rounded-md bg-sky-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+            >
+              立即备份整库
+            </button>
+            <button
+              type="button"
+              disabled={webdavBusy}
+              onClick={async () => {
+                setWebdavBusy(true);
+                setWebdavStatus(null);
+                try {
+                  const list = await (window.api as any).sync.webdavList(webdavCfg);
+                  if (!list || list.length === 0) {
+                    setWebdavStatus({ ok: false, msg: '远端无备份文件' });
+                    return;
+                  }
+                  const choice = window.prompt(
+                    '选择要下载的备份（输入完整文件名）:\n' +
+                      list.map((f: any) => `${f.name}（${(f.size / 1024).toFixed(1)} KB）`).join('\n'),
+                    list[0].name,
+                  );
+                  if (!choice) return;
+                  const r = await (window.api as any).sync.webdavDownload(choice, webdavCfg);
+                  setWebdavStatus({ ok: true, msg: `已下载到: ${r.localPath}` });
+                } catch (err: any) {
+                  setWebdavStatus({ ok: false, msg: err?.message ?? '下载失败' });
+                } finally {
+                  setWebdavBusy(false);
+                }
+              }}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              下载远端备份
+            </button>
+          </div>
+        </section>
+
+        {/* ── Git 同步 ────────────────────────────────────────── */}
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <GitBranch className="h-5 w-5 text-violet-500" />
+            <h2 className="text-lg font-semibold text-gray-800">Git 同步</h2>
+          </div>
+          <p className="mb-4 text-sm text-gray-500">
+            导出条目为 Markdown 后通过 isomorphic-git 推送到 GitHub/Gitee/GitLab。
+            {gitLastSyncAt && (
+              <span className="ml-2 text-xs text-gray-400">
+                上次推送：{new Date(gitLastSyncAt).toLocaleString()}
+              </span>
+            )}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs text-gray-500">仓库 URL（HTTPS）</label>
+              <input
+                type="text"
+                value={gitCfg.remoteUrl}
+                onChange={(e) => setGitCfg({ ...gitCfg, remoteUrl: e.target.value })}
+                className={inputClass}
+                placeholder="https://github.com/yourname/knowledge-base.git"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">分支</label>
+              <input
+                type="text"
+                value={gitCfg.branch}
+                onChange={(e) => setGitCfg({ ...gitCfg, branch: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">用户名（可选）</label>
+              <input
+                type="text"
+                value={gitCfg.username}
+                onChange={(e) => setGitCfg({ ...gitCfg, username: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="mb-1 block text-xs text-gray-500">Personal Access Token</label>
+              <input
+                type="password"
+                value={gitCfg.token}
+                onChange={(e) => setGitCfg({ ...gitCfg, token: e.target.value })}
+                className={inputClass}
+                placeholder="ghp_xxxxxxxxxxxx"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">Author Name</label>
+              <input
+                type="text"
+                value={gitCfg.authorName}
+                onChange={(e) => setGitCfg({ ...gitCfg, authorName: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">Author Email</label>
+              <input
+                type="email"
+                value={gitCfg.authorEmail}
+                onChange={(e) => setGitCfg({ ...gitCfg, authorEmail: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          {gitStatus && (
+            <div
+              className={`mt-3 rounded-md px-3 py-2 text-sm ${
+                gitStatus.ok ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              }`}
+            >
+              {gitStatus.msg}
+            </div>
+          )}
+
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              disabled={gitBusy}
+              onClick={async () => {
+                setGitBusy(true);
+                setGitStatus(null);
+                try {
+                  await (window.api as any).sync.saveGitConfig(gitCfg);
+                  setGitStatus({ ok: true, msg: '配置已保存' });
+                } catch (err: any) {
+                  setGitStatus({ ok: false, msg: err?.message ?? '保存失败' });
+                } finally {
+                  setGitBusy(false);
+                }
+              }}
+              className="rounded-md border border-violet-500 px-3 py-1.5 text-sm text-violet-600 hover:bg-violet-50 disabled:opacity-50"
+            >
+              保存配置
+            </button>
+            <button
+              type="button"
+              disabled={gitBusy}
+              onClick={async () => {
+                setGitBusy(true);
+                setGitStatus(null);
+                try {
+                  await (window.api as any).sync.saveGitConfig(gitCfg);
+                  const r = await (window.api as any).sync.gitPush(gitCfg);
+                  setGitStatus({
+                    ok: true,
+                    msg: r.pushed
+                      ? `推送成功（commit: ${String(r.commitOid).slice(0, 7)}）`
+                      : `已提交但 push 失败，请检查 token：${String(r.commitOid).slice(0, 7)}`,
+                  });
+                  setGitLastSyncAt(new Date().toISOString());
+                } catch (err: any) {
+                  setGitStatus({ ok: false, msg: err?.message ?? '推送失败' });
+                } finally {
+                  setGitBusy(false);
+                }
+              }}
+              className="rounded-md bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+            >
+              提交 + 推送
+            </button>
+          </div>
+        </section>
+
+        {/* ── 完整网页存档 ─────────────────────────────────────── */}
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Archive className="h-5 w-5 text-amber-500" />
+            <h2 className="text-lg font-semibold text-gray-800">完整网页存档</h2>
+          </div>
+          <p className="mb-4 text-sm text-gray-500">
+            后台启动隐藏 Chromium 加载页面，内联 CSS 与图片为 Data URL，移除 JS，离线可读。
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={archiveUrl}
+              onChange={(e) => setArchiveUrl(e.target.value)}
+              className={inputClass}
+              placeholder="https://example.com/article"
+            />
+            <button
+              type="button"
+              disabled={archiveBusy || !archiveUrl.trim()}
+              onClick={async () => {
+                setArchiveBusy(true);
+                setArchiveResult(null);
+                try {
+                  const r: any = await (window.api as any).import.archiveUrl(archiveUrl.trim());
+                  setArchiveResult(`存档成功（条目 #${r.id}）：${r.title}`);
+                  setArchiveUrl('');
+                } catch (err: any) {
+                  setArchiveResult('存档失败：' + (err?.message ?? '未知错误'));
+                } finally {
+                  setArchiveBusy(false);
+                }
+              }}
+              className="flex-shrink-0 rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+            >
+              {archiveBusy ? '存档中...' : '完整存档'}
+            </button>
+          </div>
+          {archiveResult && (
+            <div
+              className={`mt-3 rounded-md px-3 py-2 text-sm ${
+                archiveResult.includes('失败') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'
+              }`}
+            >
+              {archiveResult}
             </div>
           )}
         </section>

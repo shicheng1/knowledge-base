@@ -209,6 +209,13 @@ ALTER TABLE items ADD COLUMN is_template TINYINT(1) NOT NULL DEFAULT 0 COMMENT '
 ALTER TABLE items ADD COLUMN template_category VARCHAR(100) NULL COMMENT '模板分类';
 ALTER TABLE items ADD INDEX idx_items_is_template (is_template);
     `.trim()
+  },
+  {
+    name: '008_daily_note',
+    sql: `
+ALTER TABLE items ADD COLUMN daily_date DATE NULL COMMENT '每日笔记日期';
+ALTER TABLE items ADD INDEX idx_items_daily_date (daily_date);
+    `.trim()
   }
 ];
 

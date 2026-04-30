@@ -63,6 +63,9 @@ const api = {
     restoreRevision: (revisionId: number) => invoke('item:restoreRevision', revisionId),
     getDashboardStats: () => invoke('item:getDashboardStats'),
     getTemplates: () => invoke('item:getTemplates'),
+    getGraph: () => invoke('item:getGraph'),
+    getOrCreateDailyNote: (date: string) => invoke('item:getOrCreateDailyNote', date),
+    searchTodos: () => invoke('item:searchTodos'),
   },
 
   // ── 文件夹 API ────────────────────────────────────────────
@@ -155,6 +158,22 @@ const api = {
       invoke('import:obsidianVault', dirPath, parentFolderId),
     bookmarks: (filePath: string, parentFolderId?: number | null) =>
       invoke('import:bookmarks', filePath, parentFolderId),
+    archiveUrl: (url: string, folderId?: number | null) =>
+      invoke('archive:fromUrl', url, folderId),
+  },
+
+  // ── 同步 API ─────────────────────────────────────────────
+  sync: {
+    getStatus: () => invoke('sync:getStatus'),
+    saveWebdavConfig: (cfg: any) => invoke('sync:saveWebdavConfig', cfg),
+    webdavTest: (cfg?: any) => invoke('sync:webdavTest', cfg),
+    webdavBackup: (cfg?: any) => invoke('sync:webdavBackup', cfg),
+    webdavList: (cfg?: any) => invoke('sync:webdavList', cfg),
+    webdavDownload: (fileName: string, cfg?: any) =>
+      invoke('sync:webdavDownload', fileName, cfg),
+    saveGitConfig: (cfg: any) => invoke('sync:saveGitConfig', cfg),
+    gitTest: (cfg: any) => invoke('sync:gitTest', cfg),
+    gitPush: (cfg?: any) => invoke('sync:gitPush', cfg),
   },
 
   // ── 事件监听（带频道白名单验证） ─────────────────────────

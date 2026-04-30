@@ -188,6 +188,52 @@ export class LinkRepository {
   }
 
   /**
+   * Get all items + all links for graph rendering.
+   */
+  async getGraph(): Promise<{
+    nodes: Array<{ id: number; title: string; contentType: string; folderId: number | null }>;
+    edges: Array<{ source: number; target: number }>;
+  }> {
+    try {
+      const itemRows = await query(
+        `SELECT id, title, content_type, folder_id FROM items WHERE deleted_at IS NULL`,
+        []
+      );
+      const linkRows = await query(
+        `SELECT il.source_item_id, il.target_item_id
+         FROM item_links il
+         INNER JOIN items s ON il.source_item_id = s.id AND s.deleted_at IS NULL
+         INNER JOIN items t ON il.target_item_id = t.id AND t.deleted_at IS NULL`,
+        []
+      );
+
+      const nodes = Array.isArray(itemRows)
+        ? (itemRows as Array<{ id: number; title: string; content_type: string; folder_id: number | null }>).map(
+            (row) => ({
+              id: row.id,
+              title: row.title,
+              contentType: row.content_type,
+              folderId: row.folder_id,
+            }),
+          )
+        : [];
+
+      const edges = Array.isArray(linkRows)
+        ? (linkRows as Array<{ source_item_id: number; target_item_id: number }>).map((row) => ({
+            source: row.source_item_id,
+            target: row.target_item_id,
+          }))
+        : [];
+
+      return { nodes, edges };
+    } catch (error) {
+      throw new Error(
+        `Failed to get graph: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
    * Find items by title for link resolution.
    */
   async findItemByTitle(title: string): Promise<Array<{ id: number; title: string }>> {

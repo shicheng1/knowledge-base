@@ -1035,6 +1035,65 @@ export class ItemRepository {
   }
 
   /**
+   * Get or create the daily note for the given date (YYYY-MM-DD).
+   */
+  async getOrCreateDailyNote(date: string): Promise<Item> {
+    try {
+      const existing = await query(
+        `SELECT * FROM items WHERE daily_date = ? AND deleted_at IS NULL LIMIT 1`,
+        [date],
+      );
+      if (Array.isArray(existing) && existing.length > 0) {
+        const item = existing[0] as Item;
+        const tagRows = await query(
+          `SELECT t.* FROM tags t INNER JOIN item_tags it ON t.id = it.tag_id WHERE it.item_id = ?`,
+          [item.id],
+        );
+        item.tags = Array.isArray(tagRows) ? (tagRows as Item['tags']) : [];
+        return item;
+      }
+
+      const result = await query<ResultSetHeader>(
+        `INSERT INTO items (title, content, content_type, source_type, daily_date)
+         VALUES (?, ?, 'note', 'manual', ?)`,
+        [date, `# ${date}\n\n`, date],
+      );
+      const id = result.insertId;
+      const created = await this.findById(id);
+      if (!created) throw new Error('Failed to create daily note');
+      return created;
+    } catch (error) {
+      throw new Error(
+        `Failed to get/create daily note for ${date}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Find items containing TODO checkboxes (- [ ] / - [x]).
+   */
+  async searchTodos(): Promise<Array<{ id: number; title: string; content: string; updated_at: string }>> {
+    try {
+      const rows = await query(
+        `SELECT id, title, content, updated_at
+         FROM items
+         WHERE deleted_at IS NULL
+           AND content IS NOT NULL
+           AND content REGEXP '- \\\\[[ xX]\\\\]'
+         ORDER BY updated_at DESC`,
+        [],
+      );
+      return Array.isArray(rows)
+        ? (rows as Array<{ id: number; title: string; content: string; updated_at: string }>)
+        : [];
+    } catch (error) {
+      throw new Error(
+        `Failed to search todos: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
    * Get all template items.
    */
   async getTemplates(): Promise<Item[]> {

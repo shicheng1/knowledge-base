@@ -4,7 +4,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import TipTapEditor from '../components/editor/TipTapEditor';
-import MarkdownEditor from '../components/editor/MarkdownEditor';
+import MarkdownEditor, { type MarkdownEditorHandle } from '../components/editor/MarkdownEditor';
+import OutlinePanel from '../components/editor/OutlinePanel';
 import WordPreview from '../components/preview/WordPreview';
 import ExcelPreview from '../components/preview/ExcelPreview';
 import BacklinksPanel from '../components/detail/BacklinksPanel';
@@ -92,6 +93,7 @@ const ItemDetailView: React.FC = () => {
 
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [folderTree, setFolderTree] = useState<FolderItem[]>([]);
+  const mdEditorRef = React.useRef<MarkdownEditorHandle>(null);
 
   const loadItem = useCallback(async () => {
     if (!itemId) return;
@@ -510,14 +512,25 @@ const ItemDetailView: React.FC = () => {
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">内容</label>
             {isMarkdownFile ? (
-              <MarkdownEditor
-                content={editContent}
-                onChange={(value) => setEditContent(value)}
-                viewMode={mdViewMode}
-                onViewModeChange={setMdViewMode}
-                placeholder="输入 Markdown 内容..."
-                itemId={itemId}
-              />
+              <div className="flex gap-3">
+                <div className="flex-1 min-w-0">
+                  <MarkdownEditor
+                    ref={mdEditorRef}
+                    content={editContent}
+                    onChange={(value) => setEditContent(value)}
+                    viewMode={mdViewMode}
+                    onViewModeChange={setMdViewMode}
+                    placeholder="输入 Markdown 内容..."
+                    itemId={itemId}
+                  />
+                </div>
+                <div className="w-56 flex-shrink-0">
+                  <OutlinePanel
+                    content={editContent}
+                    onJumpToLine={(line) => mdEditorRef.current?.scrollToLine(line)}
+                  />
+                </div>
+              </div>
             ) : (
               <TipTapEditor
                 content={editContent}

@@ -1,5 +1,95 @@
 # 迭代版本日志
 
+## v2.2.0 (2026-04-30)
+
+### 新增功能（不接入 AI 的优先级 1-5 功能）
+
+- **Markdown 编辑器增强** — 新增 KaTeX 数学公式渲染（`$...$`/`$$...$$`）、Mermaid 图表渲染（` ```mermaid ` 代码块）、编辑/预览双向同步滚动、底部字数/字符/阅读时长统计栏。
+- **大纲面板（Outline）** — 编辑 Markdown 时右侧实时显示标题层级大纲，点击跳转到对应行号。
+- **命令面板（Command Palette）** — 全局快捷键 `Ctrl+P` 跳转条目（标题模糊搜索），`Ctrl+Shift+P` 调用命令（新建笔记/前往各视图/注册右键菜单等），支持上下键选择、回车确认、Esc 关闭。
+- **知识图谱视图（Graph）** — 基于 vis-network 渲染条目节点 + `item_links` 边，支持按内容类型着色、按入链度数调整大小、关键词过滤、隐藏孤立节点、双击跳转条目详情。
+- **每日笔记（Daily Note）** — `/daily/:date?` 路由，按日期自动获取或创建当日笔记（标题为 YYYY-MM-DD），支持前一天/后一天/今天快速翻页，复用 Markdown 编辑器。
+- **TODO 聚合（Todos）** — 全库扫描 `- [ ]` / `- [x]` 行，按条目分组展示。复选框点击直接更新原条目内容并切换状态，支持待办/已完成/全部三种过滤。
+- **WebDAV 备份/恢复** — 设置页新增 WebDAV 配置卡片，支持坚果云、Nextcloud 等 WebDAV 服务。一键将整库导出为 ZIP（metadata.json + 各条目 .md/.json）上传到远端，支持列出远端备份并下载到本地。
+- **Git 同步** — 设置页新增 Git 同步卡片，基于 `isomorphic-git` 实现：将所有条目按文件夹层级写入本地工作目录的 `.md` 文件（含 frontmatter），自动 commit + push 到 GitHub/Gitee/GitLab（HTTPS + PAT）。
+- **完整网页存档** — 设置页"完整网页存档"输入 URL，主进程启动隐藏 BrowserWindow 加载页面后注入脚本：内联所有外部 CSS、将图片转为 base64 Data URL、移除所有 `<script>`，生成离线可读的完整 HTML 存为 article 条目。同时暴露 `POST /api/archive` HTTP 接口。
+- **Chrome 扩展完整存档模式** — popup 新增"完整存档"复选框，勾选后直接调用桌面端 HTTP `/api/archive` 接口，避免 readability 提取丢失的样式与图片。
+- **侧边栏新增导航** — 每日笔记、TODO 聚合、知识图谱三个一级入口。
+
+### 数据库变更
+
+| 迁移               | 内容                                            |
+| ------------------ | ----------------------------------------------- |
+| 008\_daily\_note   | `items` 表新增 `daily_date` DATE 列与索引       |
+
+### IPC 通道新增
+
+| 通道                          | 说明                                |
+| ----------------------------- | ----------------------------------- |
+| `item:getGraph`               | 获取整库节点 + 边（图谱用）         |
+| `item:getOrCreateDailyNote`   | 获取或创建指定日期的每日笔记        |
+| `item:searchTodos`            | 全库扫描含 TODO 复选框的条目        |
+| `sync:getStatus`              | 读取 WebDAV/Git 配置 + 上次同步时间 |
+| `sync:saveWebdavConfig`       | 保存 WebDAV 配置                    |
+| `sync:webdavTest`             | 测试 WebDAV 连接                    |
+| `sync:webdavBackup`           | 整库 ZIP 备份到 WebDAV              |
+| `sync:webdavList`             | 列出远端 WebDAV 备份                |
+| `sync:webdavDownload`         | 下载指定 WebDAV 备份                |
+| `sync:saveGitConfig`          | 保存 Git 配置                       |
+| `sync:gitPush`                | 写入 + commit + push                |
+| `archive:fromUrl`             | 完整网页存档创建条目                |
+
+### HTTP 接口新增
+
+| 路径               | 方法 | 说明                                    |
+| ------------------ | ---- | --------------------------------------- |
+| `/api/archive`     | POST | Chrome 扩展完整存档模式调用，返回 itemId |
+
+### 文件变更汇总
+
+| 操作 | 文件                                                            |
+| ---- | --------------------------------------------------------------- |
+| 新增 | `src/renderer/src/components/editor/MermaidBlock.tsx`           |
+| 新增 | `src/renderer/src/components/editor/OutlinePanel.tsx`           |
+| 新增 | `src/renderer/src/components/global/CommandPalette.tsx`         |
+| 新增 | `src/renderer/src/views/GraphView.tsx`                          |
+| 新增 | `src/renderer/src/views/DailyNoteView.tsx`                      |
+| 新增 | `src/renderer/src/views/TodoView.tsx`                           |
+| 新增 | `src/main/services/webdav-sync.service.ts`                      |
+| 新增 | `src/main/services/full-archiver.service.ts`                    |
+| 新增 | `src/main/ipc/sync.ipc.ts`                                      |
+| 新增 | `src/main/ipc/archive.ipc.ts`                                   |
+| 修改 | `src/renderer/src/components/editor/MarkdownEditor.tsx` — KaTeX/Mermaid/同步滚动/字数栏/scrollToLine |
+| 修改 | `src/renderer/src/components/layout/Layout.tsx` — 接入 CommandPalette |
+| 修改 | `src/renderer/src/components/layout/Sidebar.tsx` — 三个新入口    |
+| 修改 | `src/renderer/src/views/ItemDetailView.tsx` — 大纲面板          |
+| 修改 | `src/renderer/src/views/SettingsView.tsx` — WebDAV/Git/存档卡片 |
+| 修改 | `src/renderer/src/App.tsx` — 注册新路由                         |
+| 修改 | `src/main/database/repositories/item.repo.ts` — daily/todos 方法 |
+| 修改 | `src/main/database/repositories/link.repo.ts` — getGraph        |
+| 修改 | `src/main/database/migrations/index.ts` — 008_daily_note        |
+| 修改 | `src/main/ipc/item.ipc.ts` — graph/daily/todos 三个 IPC         |
+| 修改 | `src/main/ipc/index.ts` — 注册 sync/archive handlers            |
+| 修改 | `src/main/integrations/http-server.ts` — `/api/archive` 路由    |
+| 修改 | `src/preload/index.ts` — sync/archive/daily/todos/graph 暴露    |
+| 修改 | `extension/manifest.json` — host_permissions 加 localhost:17321 |
+| 修改 | `extension/popup/popup.html` — 完整存档复选框                   |
+| 修改 | `extension/popup/popup.js` — 完整存档分支调用 HTTP /api/archive |
+
+### 依赖变更
+
+| 操作 | 包名                       | 用途                                |
+| ---- | -------------------------- | ----------------------------------- |
+| 新增 | `remark-math@^6`           | 编辑器预览解析 LaTeX 语法           |
+| 新增 | `rehype-katex@^7`          | 编辑器预览渲染 KaTeX                |
+| 新增 | `katex@^0.16`              | KaTeX 字体与样式                    |
+| 新增 | `mermaid@^11`              | 流程图/时序图渲染                   |
+| 新增 | `vis-network@^9` / `vis-data` | 知识图谱可视化                  |
+| 新增 | `webdav@^5`                | WebDAV 客户端                       |
+| 新增 | `isomorphic-git@^1`        | 纯 JS Git 客户端，免装系统 git      |
+
+***
+
 ## v1.2.2 (2026-04-30)
 
 ### 新增功能

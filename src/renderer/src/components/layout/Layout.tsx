@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import CommandPalette from '../global/CommandPalette';
 
 const Layout: React.FC = () => {
   const handleGlobalDragOver = (e: React.DragEvent) => {
@@ -26,6 +27,8 @@ const Layout: React.FC = () => {
           <Outlet />
         </div>
       </main>
+
+      <CommandPalette />
     </div>
   );
 };

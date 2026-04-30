@@ -15,6 +15,7 @@ const tagInput = document.getElementById('tag-input');
 const tagList = document.getElementById('tag-list');
 const tagSuggestions = document.getElementById('tag-suggestions');
 const noteInput = document.getElementById('note-input');
+const archiveModeCheckbox = document.getElementById('archive-mode');
 const saveBtn = document.getElementById('save-btn');
 const statusMessage = document.getElementById('status-message');
 const openSettingsLink = document.getElementById('open-settings');
@@ -264,6 +265,30 @@ async function handleSave() {
   // 设置加载状态
   setLoading(true);
   hideStatus();
+
+  // 完整存档模式：直接调用桌面应用 HTTP 接口
+  if (archiveModeCheckbox?.checked) {
+    try {
+      const folderIdValue = folderSelect.value ? Number(folderSelect.value) : null;
+      const res = await fetch('http://localhost:17321/api/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, folderId: folderIdValue, tags: [...currentTags] }),
+      });
+      const json = await res.json();
+      if (json.status === 'ok') {
+        showStatus('success', `完整存档成功（条目 #${json.data?.itemId}）`);
+        setTimeout(() => window.close(), 1500);
+      } else {
+        showStatus('error', `完整存档失败：${json.error || '未知错误'}`);
+      }
+    } catch (err) {
+      showStatus('error', `完整存档失败：${err.message || '请确保桌面应用正在运行'}`);
+    } finally {
+      setLoading(false);
+    }
+    return;
+  }
 
   try {
     const saveData = {

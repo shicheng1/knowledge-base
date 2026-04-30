@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useCallback, useRef, useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import CodeMirror, { type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
@@ -7,15 +7,28 @@ import { EditorView } from '@codemirror/view';
 import { search } from '@codemirror/search';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import MarkdownToolbar from './MarkdownToolbar';
+import MermaidBlock from './MermaidBlock';
 import { Edit3, Columns, Eye } from 'lucide-react';
+
+const countWords = (text: string): { chars: number; words: number; minutes: number } => {
+  const chars = text.length;
+  const cnChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;
+  const enWords = (text.match(/[A-Za-z]+/g) || []).length;
+  const minutes = Math.max(1, Math.ceil(cnChars / 300 + enWords / 200));
+  return { chars, words: cnChars + enWords, minutes };
+};
 
 export interface MarkdownEditorHandle {
   insertText: (text: string) => void;
   replaceSelection: (text: string) => void;
   focus: () => void;
+  scrollToLine: (line: number) => void;
 }
 
 interface MarkdownEditorProps {
@@ -48,8 +61,11 @@ const formatActions: Record<string, { before: string; after: string; placeholder
 const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
   ({ content, onChange, viewMode = 'split', onViewModeChange, placeholder = '输入 Markdown 内容...', itemId }, ref) => {
     const editorRef = useRef<ReactCodeMirrorRef>(null);
+    const previewRef = useRef<HTMLDivElement>(null);
+    const syncingRef = useRef<'editor' | 'preview' | null>(null);
     const [splitRatio, setSplitRatio] = useState(50);
     const [isDragging, setIsDragging] = useState(false);
+    const stats = useMemo(() => countWords(content || ''), [content]);
 
     const insertMarkdownImage = useCallback((localSrc: string, altText?: string) => {
       const view = editorRef.current?.view;
@@ -89,6 +105,17 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
       focus: () => {
         const view = editorRef.current?.view;
         if (view) view.focus();
+      },
+      scrollToLine: (line: number) => {
+        const view = editorRef.current?.view;
+        if (!view) return;
+        const safeLine = Math.max(1, Math.min(view.state.doc.lines, line));
+        const lineInfo = view.state.doc.line(safeLine);
+        view.dispatch({
+          selection: { anchor: lineInfo.from },
+          effects: EditorView.scrollIntoView(lineInfo.from, { y: 'start' }),
+        });
+        view.focus();
       },
     }));
 
@@ -176,6 +203,23 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
         markdown({ base: markdownLanguage, codeLanguages: languages }),
         EditorView.lineWrapping,
         search(),
+        EditorView.domEventHandlers({
+          scroll: (_event, view) => {
+            if (syncingRef.current === 'preview') {
+              syncingRef.current = null;
+              return false;
+            }
+            const preview = previewRef.current;
+            if (!preview) return false;
+            const editorScroll = view.scrollDOM;
+            const ratio =
+              editorScroll.scrollTop /
+              Math.max(1, editorScroll.scrollHeight - editorScroll.clientHeight);
+            syncingRef.current = 'editor';
+            preview.scrollTop = ratio * Math.max(0, preview.scrollHeight - preview.clientHeight);
+            return false;
+          },
+        }),
       ];
 
       if (itemId) {
@@ -301,18 +345,35 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
 
           {(viewMode === 'preview' || viewMode === 'split') && (
             <div
+              ref={previewRef}
               className={`overflow-auto bg-white ${viewMode === 'split' ? '' : 'w-full'}`}
               style={
                 viewMode === 'split'
                   ? { width: `${100 - splitRatio}%` }
                   : undefined
               }
+              onScroll={() => {
+                if (viewMode !== 'split') return;
+                if (syncingRef.current === 'editor') {
+                  syncingRef.current = null;
+                  return;
+                }
+                const view = editorRef.current?.view;
+                const preview = previewRef.current;
+                if (!view || !preview) return;
+                const ratio =
+                  preview.scrollTop / Math.max(1, preview.scrollHeight - preview.clientHeight);
+                const editorScroll = view.scrollDOM;
+                syncingRef.current = 'preview';
+                editorScroll.scrollTop =
+                  ratio * Math.max(0, editorScroll.scrollHeight - editorScroll.clientHeight);
+              }}
             >
               <div className="md-preview-content prose prose-sm max-w-none p-4">
                 {content ? (
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeKatex]}
                     components={{
                       a: ({ href, children, ...props }: any) => (
                         <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
@@ -327,6 +388,19 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
                           <table {...props}>{children}</table>
                         </div>
                       ),
+                      code: ({ inline, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || '');
+                        const lang = match?.[1];
+                        const codeText = String(children).replace(/\n$/, '');
+                        if (!inline && lang === 'mermaid') {
+                          return <MermaidBlock code={codeText} />;
+                        }
+                        return (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
                     }}
                   >
                     {content}
@@ -340,6 +414,12 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 bg-gray-50 px-3 py-1 text-xs text-gray-500">
+          <span>字符 {stats.chars}</span>
+          <span>字数 {stats.words}</span>
+          <span>阅读约 {stats.minutes} 分钟</span>
         </div>
       </div>
     );

@@ -3,6 +3,8 @@ import { URL } from 'url'
 import { tagRepo } from '../database/repositories/tag.repo'
 import { folderRepo } from '../database/repositories/folder.repo'
 import { importFromHtml } from '../services/import-service'
+import { archiveFullPage } from '../services/full-archiver.service'
+import { itemRepo } from '../database/repositories/item.repo'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -151,6 +153,35 @@ async function handleGetTags(req: http.IncomingMessage, res: http.ServerResponse
   }
 }
 
+async function handleArchivePage(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
+  try {
+    const body = (await parseBody(req)) as { url: string; folderId?: number; tags?: string[] }
+    if (!body.url || !/^https?:\/\//i.test(body.url)) {
+      sendJson(res, 400, { status: 'error', error: 'Missing or invalid url' })
+      return
+    }
+
+    const result = await archiveFullPage(body.url)
+    const itemId = await itemRepo.create({
+      title: result.title || body.url,
+      content: result.textContent.slice(0, 50000),
+      contentHtml: result.html,
+      contentType: 'article',
+      sourceUrl: body.url,
+      sourceType: 'web',
+      sourceName: result.title,
+      folderId: body.folderId ?? null,
+      metadata: { archive: 'full' },
+    })
+
+    sendJson(res, 200, { status: 'ok', data: { itemId, title: result.title } })
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error('[HttpServer] Error archiving page:', errorMessage)
+    sendJson(res, 500, { status: 'error', error: errorMessage })
+  }
+}
+
 function handleHealth(req: http.IncomingMessage, res: http.ServerResponse): void {
   sendJson(res, 200, {
     status: 'ok',
@@ -179,6 +210,8 @@ async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse
   try {
     if (pathname === '/api/save' && req.method === 'POST') {
       await handleSavePage(req, res)
+    } else if (pathname === '/api/archive' && req.method === 'POST') {
+      await handleArchivePage(req, res)
     } else if (pathname === '/api/folders' && req.method === 'GET') {
       await handleGetFolders(req, res)
     } else if (pathname === '/api/tags' && req.method === 'GET') {
