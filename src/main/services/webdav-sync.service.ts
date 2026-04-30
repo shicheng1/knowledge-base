@@ -4,11 +4,20 @@ import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import os from 'os';
 import JSZip from 'jszip';
-import { createClient, type WebDAVClient } from 'webdav';
 import { itemRepo } from '../database/repositories/item.repo';
 import { tagRepo } from '../database/repositories/tag.repo';
 import { query } from '../database/connection';
 import { logger } from '../utils/logger';
+
+type WebDAVClient = any;
+
+let webdavModulePromise: Promise<any> | null = null;
+const getWebdavModule = (): Promise<any> => {
+  if (!webdavModulePromise) {
+    webdavModulePromise = (Function('return import("webdav")') as () => Promise<any>)();
+  }
+  return webdavModulePromise;
+};
 
 interface WebDavConfig {
   url: string;
@@ -51,8 +60,11 @@ export const getGitConfig = (): GitConfig => syncStore.get('git') as GitConfig;
 export const setGitConfig = (config: GitConfig): void => syncStore.set('git', config);
 export const getGitLastSync = (): string | null => syncStore.get('gitLastSyncAt');
 
-const buildClient = (cfg: WebDavConfig): WebDAVClient => {
+const buildClient = async (cfg: WebDavConfig): Promise<WebDAVClient> => {
   if (!cfg.url) throw new Error('WebDAV URL 未配置');
+  const mod = await getWebdavModule();
+  const createClient = mod.createClient || mod.default?.createClient;
+  if (!createClient) throw new Error('webdav 模块加载失败');
   return createClient(cfg.url, {
     username: cfg.username,
     password: cfg.password,
@@ -114,7 +126,7 @@ const buildExportZip = async (): Promise<Buffer> => {
 };
 
 export const testWebDavConnection = async (cfg: WebDavConfig): Promise<boolean> => {
-  const client = buildClient(cfg);
+  const client = await buildClient(cfg);
   // exists() 返回 true/false 即视为通
   await client.exists('/');
   return true;
@@ -125,7 +137,7 @@ export const backupToWebDav = async (
 ): Promise<{ remoteFile: string; size: number }> => {
   const merged = { ...getWebDavConfig(), ...cfg };
   if (!merged.url) throw new Error('WebDAV URL 未配置');
-  const client = buildClient(merged);
+  const client = await buildClient(merged);
   const remoteDir = merged.remotePath || '/knowledge-base';
 
   if (!(await client.exists(remoteDir))) {
@@ -146,7 +158,7 @@ export const listWebDavBackups = async (
   cfg?: Partial<WebDavConfig>,
 ): Promise<Array<{ name: string; size: number; lastModified: string }>> => {
   const merged = { ...getWebDavConfig(), ...cfg };
-  const client = buildClient(merged);
+  const client = await buildClient(merged);
   const remoteDir = merged.remotePath || '/knowledge-base';
   if (!(await client.exists(remoteDir))) return [];
   const items = (await client.getDirectoryContents(remoteDir)) as any[];
@@ -160,7 +172,7 @@ export const downloadWebDavBackup = async (
   cfg?: Partial<WebDavConfig>,
 ): Promise<{ localPath: string }> => {
   const merged = { ...getWebDavConfig(), ...cfg };
-  const client = buildClient(merged);
+  const client = await buildClient(merged);
   const remoteDir = merged.remotePath || '/knowledge-base';
   const remoteFile = `${remoteDir}/${fileName}`;
   const buf = (await client.getFileContents(remoteFile)) as Buffer;
@@ -252,8 +264,11 @@ export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: 
 
   const dir = ensureGitWorkdir();
   const fs = await import('fs');
-  const http = await import('isomorphic-git/http/node');
-  const git = (await import('isomorphic-git')).default;
+  const dynImport = Function('m', 'return import(m)') as (m: string) => Promise<any>;
+  const httpMod = await dynImport('isomorphic-git/http/node');
+  const http = httpMod.default || httpMod;
+  const gitMod = await dynImport('isomorphic-git');
+  const git = gitMod.default || gitMod;
 
   const gitDir = path.join(dir, '.git');
   if (!existsSync(gitDir)) {
