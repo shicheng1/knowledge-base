@@ -343,7 +343,14 @@ function downloadFile(url: string, destPath: string): Promise<void> {
 
     const request = protocol.get(url, opts, (response) => {
       if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        downloadFile(response.headers.location, destPath).then(resolve).catch(reject);
+        let nextUrl: string;
+        try {
+          nextUrl = new URL(response.headers.location, url).href;
+        } catch {
+          reject(new Error(`Invalid redirect Location: ${response.headers.location}`));
+          return;
+        }
+        downloadFile(nextUrl, destPath).then(resolve).catch(reject);
         return;
       }
 

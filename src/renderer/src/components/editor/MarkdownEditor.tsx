@@ -6,6 +6,7 @@ import { githubLight } from '@uiw/codemirror-theme-github';
 import { EditorView } from '@codemirror/view';
 import { search } from '@codemirror/search';
 import ReactMarkdown from 'react-markdown';
+import { markdownUrlTransform } from '../../markdown/urlTransform';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
@@ -374,6 +375,7 @@ const MarkdownEditor = forwardRef<MarkdownEditorHandle, MarkdownEditorProps>(
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeKatex]}
+                    urlTransform={markdownUrlTransform}
                     components={{
                       a: ({ href, children, ...props }: any) => (
                         <a href={href} target="_blank" rel="noopener noreferrer" {...props}>

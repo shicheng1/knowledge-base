@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import { markdownUrlTransform } from '../markdown/urlTransform';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import {
@@ -718,7 +719,11 @@ const FolderView: React.FC = () => {
                 {/* 预览内容 - Markdown / 文本 */}
                 {previewItem.content && previewItem.content_type !== 'image' && !(previewItem.content_type === 'file' && !previewItem.content) && (
                   <div className="prose prose-sm max-w-none text-gray-700">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      urlTransform={markdownUrlTransform}
+                    >
                       {previewItem.content}
                     </ReactMarkdown>
                   </div>

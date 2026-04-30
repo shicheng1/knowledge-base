@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
+import { markdownUrlTransform } from '../markdown/urlTransform';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import TipTapEditor from '../components/editor/TipTapEditor';
@@ -720,7 +721,11 @@ const ItemDetailView: React.FC = () => {
 
           {isMarkdownFile && item.content && (
             <div className="prose prose-sm max-w-none rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                urlTransform={markdownUrlTransform}
+              >
                 {item.content}
               </ReactMarkdown>
             </div>
@@ -751,7 +756,11 @@ const ItemDetailView: React.FC = () => {
 
           {!isMarkdownFile && item.content && !item.content_html && item.content_type !== 'image' && !(item.content_type === 'file' && !item.content) && (
             <div className="prose prose-sm max-w-none rounded-lg border border-gray-100 bg-white p-6 shadow-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                urlTransform={markdownUrlTransform}
+              >
                 {item.content}
               </ReactMarkdown>
             </div>

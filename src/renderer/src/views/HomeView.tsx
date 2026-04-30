@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Star, FileText, Globe, BookOpen, StickyNote, Briefcase, Plus, Pin, Archive } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { markdownUrlTransform } from '../markdown/urlTransform';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import dayjs from 'dayjs';
@@ -763,7 +764,11 @@ const HomeView: React.FC<HomeViewProps> = ({ favoriteOnly = false }) => {
                 {/* Markdown 内容 */}
                 {previewItem.content && previewItem.content_type !== 'image' && !(previewItem.content_type === 'file' && !previewItem.content) && (
                   <div className="prose prose-sm max-w-none text-gray-700">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeHighlight]}
+                      urlTransform={markdownUrlTransform}
+                    >
                       {previewItem.content}
                     </ReactMarkdown>
                   </div>
