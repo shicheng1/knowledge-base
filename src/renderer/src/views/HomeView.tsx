@@ -235,8 +235,13 @@ const HomeView: React.FC<HomeViewProps> = ({ favoriteOnly = false }) => {
     };
   }, [loadItems]);
 
-  /* 日期分组 */
-  const grouped = useMemo(() => groupByDate(items), [items]);
+  const grouped = useMemo(() => {
+    const pinned = items.filter((i) => i.is_pinned);
+    const unpinned = items.filter((i) => !i.is_pinned);
+    const rest = groupByDate(unpinned);
+    if (pinned.length === 0) return rest;
+    return [{ key: 'pinned', label: '置顶', items: pinned }, ...rest];
+  }, [items]);
 
   /* 切换收藏 */
   const handleToggleFavorite = async (e: React.MouseEvent, id: number) => {
