@@ -1012,12 +1012,18 @@ const SettingsView: React.FC = () => {
                 try {
                   await (window.api as any).sync.saveGitConfig(gitCfg);
                   const r = await (window.api as any).sync.gitPush(gitCfg);
-                  setGitStatus({
-                    ok: true,
-                    msg: r.pushed
-                      ? `推送成功（commit: ${String(r.commitOid).slice(0, 7)}）`
-                      : `已提交但 push 失败，请检查 token：${String(r.commitOid).slice(0, 7)}`,
-                  });
+                  if (r.pushed) {
+                    setGitStatus({
+                      ok: true,
+                      msg: `推送成功（commit: ${String(r.commitOid).slice(0, 7)}）`,
+                    });
+                  } else {
+                    const errDetail = r.pushError ? `\n错误详情：${r.pushError}` : '';
+                    setGitStatus({
+                      ok: false,
+                      msg: `已提交但 push 失败（commit: ${String(r.commitOid).slice(0, 7)}）\n请检查 Token 是否有效、是否过期、是否有仓库权限。${errDetail}`,
+                    });
+                  }
                   setGitLastSyncAt(new Date().toISOString());
                 } catch (err: any) {
                   setGitStatus({ ok: false, msg: err?.message ?? '推送失败' });

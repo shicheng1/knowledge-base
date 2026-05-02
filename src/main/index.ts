@@ -8,6 +8,26 @@
  * - 处理命令行参数（右键菜单集成、原生消息通信）
  */
 
+process.on('uncaughtException', (error) => {
+  const fsSync = require('fs');
+  const path = require('path');
+  const electron = require('electron');
+  const logPath = path.join(electron.app.getPath('userData'), 'crash.log');
+  const msg = `[${new Date().toISOString()}] UNCAUGHT: ${error.message}\n${error.stack}\n\n`;
+  try { fsSync.appendFileSync(logPath, msg); } catch {}
+  console.error('UNCAUGHT EXCEPTION:', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const fsSync = require('fs');
+  const path = require('path');
+  const electron = require('electron');
+  const logPath = path.join(electron.app.getPath('userData'), 'crash.log');
+  const msg = `[${new Date().toISOString()}] UNHANDLED REJECTION: ${reason}\n\n`;
+  try { fsSync.appendFileSync(logPath, msg); } catch {}
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
 import { app, BrowserWindow, ipcMain, protocol, session } from 'electron';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -55,9 +75,7 @@ function parseCommandLineArgs(argv: string[]): {
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
-  // 第二个实例：将参数转发给第一个实例后退出
   const { saveFilePath } = parseCommandLineArgs(process.argv);
-  // app.quit() 会在 app.whenReady() 后生效，这里直接退出进程
   process.exit(0);
 }
 

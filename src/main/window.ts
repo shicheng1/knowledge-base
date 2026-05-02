@@ -16,6 +16,9 @@ export function createMainWindow(): BrowserWindow {
 
   mainWindow = new BrowserWindow({
     title: '知识库',
+    icon: isDev
+      ? join(__dirname, '../../resources/icon.png')
+      : join(process.resourcesPath, 'resources/icon.png'),
     width: 1200,
     height: 800,
     minWidth: 900,

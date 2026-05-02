@@ -66,6 +66,7 @@ const api = {
     getGraph: () => invoke('item:getGraph'),
     getOrCreateDailyNote: (date: string) => invoke('item:getOrCreateDailyNote', date),
     searchTodos: () => invoke('item:searchTodos'),
+    saveReadingProgress: (id: number, progress: number) => invoke('item:saveReadingProgress', id, progress),
   },
 
   // ── 文件夹 API ────────────────────────────────────────────

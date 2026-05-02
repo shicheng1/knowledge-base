@@ -1,0 +1,12 @@
+- [x] 数据库迁移 009_reading_progress 正确添加 reading_progress 列到 items 表
+- [x] item.repo.findById 返回数据中包含 reading_progress 字段
+- [x] item.repo.saveReadingProgress 方法能正确更新 reading_progress
+- [x] IPC 通道 item:saveReadingProgress 可正常调用
+- [x] preload 暴露 item.saveReadingProgress API
+- [x] ItemDetailView 滚动时正确计算阅读百分比
+- [x] 阅读进度防抖保存（3 秒间隔）正常工作
+- [x] 打开条目时自动滚动到上次阅读位置
+- [x] 详情页顶部显示阅读进度条，宽度与百分比一致
+- [x] 进度条在滚动时实时更新
+- [x] 应用图标已替换为用户指定的 PNG 文件
+- [x] 图标在窗口标题栏和任务栏正确显示

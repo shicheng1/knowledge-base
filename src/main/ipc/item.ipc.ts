@@ -529,4 +529,13 @@ export function registerItemHandlers(): void {
       return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   });
+
+  ipcMain.handle('item:saveReadingProgress', async (_event, id: number, progress: number): Promise<IpcResult<void>> => {
+    try {
+      await itemRepo.saveReadingProgress(id, progress);
+      return { success: true, data: undefined };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
 }

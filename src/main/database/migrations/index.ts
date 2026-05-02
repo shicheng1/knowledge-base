@@ -216,6 +216,13 @@ ALTER TABLE items ADD INDEX idx_items_is_template (is_template);
 ALTER TABLE items ADD COLUMN daily_date DATE NULL COMMENT '每日笔记日期';
 ALTER TABLE items ADD INDEX idx_items_daily_date (daily_date);
     `.trim()
+  },
+  {
+    name: '009_reading_progress',
+    sql: `
+ALTER TABLE items ADD COLUMN reading_progress DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '阅读进度百分比';
+ALTER TABLE items ADD INDEX idx_items_reading_progress (reading_progress);
+    `.trim()
   }
 ];
 

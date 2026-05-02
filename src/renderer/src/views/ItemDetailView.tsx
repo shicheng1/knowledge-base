@@ -48,6 +48,7 @@ interface Item {
   updated_at: string;
   folder_path?: string;
   tags?: TagItem[];
+  reading_progress: number;
 }
 
 interface TagItem {
@@ -91,6 +92,11 @@ const ItemDetailView: React.FC = () => {
   const [showHtmlEditor, setShowHtmlEditor] = useState(false);
   const [htmlEditorContent, setHtmlEditorContent] = useState('');
   const [showEmbeddedBrowser, setShowEmbeddedBrowser] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+  const saveProgressTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAutoScrollingRef = React.useRef(false);
+  const lastSavedProgressRef = React.useRef<number | null>(null);
 
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [folderTree, setFolderTree] = useState<FolderItem[]>([]);
@@ -100,6 +106,8 @@ const ItemDetailView: React.FC = () => {
     if (!itemId) return;
     setLoading(true);
     setError(null);
+    setReadingProgress(0);
+    lastSavedProgressRef.current = null;
     try {
       const data = await window.api.item.getById(itemId);
       if (!data) {
@@ -107,6 +115,7 @@ const ItemDetailView: React.FC = () => {
         return;
       }
       setItem(data);
+      setReadingProgress(data.reading_progress ?? 0);
       setEditTitle(data.title);
       const isMd = data.mime_type === 'text/markdown' || (data.source_name && data.source_name.endsWith('.md'));
       setEditContent(isMd ? (data.content || '') : (data.content_html || data.content || ''));
@@ -142,6 +151,54 @@ const ItemDetailView: React.FC = () => {
       setEditing(true);
     }
   }, [autoEdit, item]);
+
+  useEffect(() => {
+    if (editing || !item) return;
+    isAutoScrollingRef.current = true;
+    const timer = setTimeout(() => {
+      const mainEl = document.querySelector('main.overflow-y-auto') as HTMLElement;
+      if (!mainEl) { isAutoScrollingRef.current = false; return; }
+      const scrollHeight = mainEl.scrollHeight - mainEl.clientHeight;
+      if (scrollHeight <= 0) { isAutoScrollingRef.current = false; return; }
+      const progress = item.reading_progress ?? 0;
+      if (progress > 0) {
+        const targetScroll = (progress / 100) * scrollHeight;
+        mainEl.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        setTimeout(() => { isAutoScrollingRef.current = false; }, 1000);
+      } else {
+        isAutoScrollingRef.current = false;
+      }
+    }, 500);
+    return () => { clearTimeout(timer); isAutoScrollingRef.current = false; };
+  }, [item, editing]);
+
+  useEffect(() => {
+    if (editing || !item) return;
+    const mainEl = document.querySelector('main.overflow-y-auto') as HTMLElement;
+    if (!mainEl) return;
+    const handleScroll = () => {
+      const scrollHeight = mainEl.scrollHeight - mainEl.clientHeight;
+      if (scrollHeight <= 0) return;
+      const progress = Math.round((mainEl.scrollTop / scrollHeight) * 10000) / 100;
+      setReadingProgress(progress);
+      if (isAutoScrollingRef.current) return;
+      lastSavedProgressRef.current = progress;
+      if (saveProgressTimerRef.current) clearTimeout(saveProgressTimerRef.current);
+      saveProgressTimerRef.current = setTimeout(() => {
+        window.api.item.saveReadingProgress(item.id, progress).catch(() => {});
+        lastSavedProgressRef.current = null;
+      }, 3000);
+    };
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      mainEl.removeEventListener('scroll', handleScroll);
+      if (saveProgressTimerRef.current) clearTimeout(saveProgressTimerRef.current);
+      if (lastSavedProgressRef.current !== null) {
+        window.api.item.saveReadingProgress(item.id, lastSavedProgressRef.current).catch(() => {});
+        lastSavedProgressRef.current = null;
+      }
+    };
+  }, [item, editing]);
 
   const handleToggleFavorite = async () => {
     if (!item) return;
@@ -548,7 +605,13 @@ const ItemDetailView: React.FC = () => {
       )}
 
       {!editing && (
-        <div>
+        <div ref={contentRef}>
+          <div className="sticky top-0 z-50 h-1 bg-gray-200">
+            <div
+              className="h-full bg-blue-500 transition-all duration-150"
+              style={{ width: `${readingProgress}%` }}
+            />
+          </div>
           <h1 className="mb-4 text-2xl font-bold text-gray-800">
             {isInTrash && <span className="mr-2 text-sm font-normal text-red-500">[已删除]</span>}
             {!!item.is_pinned && <Pin className="mr-1.5 inline h-5 w-5 fill-blue-500 text-blue-500 rotate-45" />}

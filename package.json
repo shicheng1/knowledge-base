@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.knowledgebase.app",
     "productName": "KnowledgeBase",
+    "icon": "resources/icon.png",
     "win": {
       "target": [
         {
@@ -33,17 +34,32 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false,
+      "allowElevation": true,
+      "perMachine": false
     },
+    "directories": {
+      "output": "dist"
+    },
+    "afterPack": "scripts/fix-nested-deps.js",
     "files": [
       "out/**/*",
+      "node_modules/**/*",
       "!src/**/*",
       "!extension/**/*",
-      "!scripts/**/*"
+      "!scripts/**/*",
+      "!**/*.map",
+      "!**/.git/**"
     ],
-    "extraResources": [],
-    "asar": true,
-    "compression": "maximum"
+    "extraResources": [
+      {
+        "from": "resources/",
+        "to": "resources/"
+      }
+    ],
+    "asar": false,
+    "compression": "normal"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
@@ -51,6 +67,7 @@
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/search": "^6.7.0",
     "@mozilla/readability": "^0.5.0",
+    "@tiptap/core": "^3.22.5",
     "@tiptap/extension-color": "^3.22.5",
     "@tiptap/extension-subscript": "^3.22.5",
     "@tiptap/extension-superscript": "^3.22.5",
@@ -59,8 +76,11 @@
     "@tiptap/extension-table-header": "^3.22.5",
     "@tiptap/extension-table-row": "^3.22.5",
     "@tiptap/extension-text-style": "^3.22.5",
+    "@tiptap/extensions": "^3.22.5",
     "@uiw/codemirror-theme-github": "^4.25.9",
     "@uiw/react-codemirror": "^4.25.9",
+    "balanced-match": "^2.0.0",
+    "call-bind-apply-helpers": "^1.0.2",
     "docx": "^9.6.1",
     "electron-store": "^8.2.0",
     "exceljs": "^4.4.0",
@@ -108,7 +128,7 @@
     "autoprefixer": "^10.4.20",
     "dayjs": "^1.11.13",
     "docx-preview": "^0.3.7",
-    "electron": "^33.3.1",
+    "electron": "^41.4.0",
     "electron-builder": "^25.1.8",
     "electron-updater": "^6.3.9",
     "electron-vite": "^2.3.0",

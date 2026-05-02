@@ -323,8 +323,6 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { to: '/', label: '全部条目', icon: Home },
     { to: '/favorites', label: '收藏', icon: Star },
-    { to: '/daily', label: '每日笔记', icon: Calendar },
-    { to: '/todos', label: 'TODO 聚合', icon: CheckSquare },
     { to: '/graph', label: '知识图谱', icon: Network },
     { to: '/stats', label: '统计', icon: BarChart3 },
     { to: '/search', label: '搜索', icon: Search },

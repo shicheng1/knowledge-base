@@ -1108,6 +1108,20 @@ export class ItemRepository {
     }
   }
 
+  async saveReadingProgress(id: number, progress: number): Promise<void> {
+    try {
+      const clampedProgress = Math.min(100, Math.max(0, progress));
+      await query(
+        `UPDATE items SET reading_progress = ? WHERE id = ?`,
+        [clampedProgress, id]
+      );
+    } catch (error) {
+      throw new Error(
+        `Failed to save reading progress for item ${id}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
   // ----------------------------------------------------------------
   // Private helpers
   // ----------------------------------------------------------------

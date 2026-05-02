@@ -42,23 +42,29 @@ interface GitConfig {
   authorName: string;
 }
 
-const syncStore = new Store<SyncStore>({
-  name: 'sync-config',
-  defaults: {
-    webdav: { url: '', username: '', password: '', remotePath: '/knowledge-base' },
-    webdavLastSyncAt: null,
-    git: { remoteUrl: '', branch: 'main', username: '', token: '', authorEmail: '', authorName: 'KnowledgeBase' },
-    gitLastSyncAt: null,
-  },
-});
+let syncStore: Store<SyncStore> | null = null;
+const getSyncStore = (): Store<SyncStore> => {
+  if (!syncStore) {
+    syncStore = new Store<SyncStore>({
+      name: 'sync-config',
+      defaults: {
+        webdav: { url: '', username: '', password: '', remotePath: '/knowledge-base' },
+        webdavLastSyncAt: null,
+        git: { remoteUrl: '', branch: 'main', username: '', token: '', authorEmail: '', authorName: 'KnowledgeBase' },
+        gitLastSyncAt: null,
+      },
+    });
+  }
+  return syncStore;
+};
 
-export const getWebDavConfig = (): WebDavConfig => syncStore.get('webdav') as WebDavConfig;
-export const setWebDavConfig = (config: WebDavConfig): void => syncStore.set('webdav', config);
-export const getWebDavLastSync = (): string | null => syncStore.get('webdavLastSyncAt');
+export const getWebDavConfig = (): WebDavConfig => getSyncStore().get('webdav') as WebDavConfig;
+export const setWebDavConfig = (config: WebDavConfig): void => getSyncStore().set('webdav', config);
+export const getWebDavLastSync = (): string | null => getSyncStore().get('webdavLastSyncAt');
 
-export const getGitConfig = (): GitConfig => syncStore.get('git') as GitConfig;
-export const setGitConfig = (config: GitConfig): void => syncStore.set('git', config);
-export const getGitLastSync = (): string | null => syncStore.get('gitLastSyncAt');
+export const getGitConfig = (): GitConfig => getSyncStore().get('git') as GitConfig;
+export const setGitConfig = (config: GitConfig): void => getSyncStore().set('git', config);
+export const getGitLastSync = (): string | null => getSyncStore().get('gitLastSyncAt');
 
 const buildClient = async (cfg: WebDavConfig): Promise<WebDAVClient> => {
   if (!cfg.url) throw new Error('WebDAV URL 未配置');
@@ -149,7 +155,7 @@ export const backupToWebDav = async (
   const remoteFile = `${remoteDir}/backup-${stamp}.zip`;
   await client.putFileContents(remoteFile, buf, { overwrite: true });
 
-  syncStore.set('webdavLastSyncAt', new Date().toISOString());
+  getSyncStore().set('webdavLastSyncAt', new Date().toISOString());
   logger.info(`WebDAV 备份完成: ${remoteFile}`);
   return { remoteFile, size: buf.length };
 };
@@ -258,9 +264,10 @@ export const testGitConfig = async (cfg: GitConfig): Promise<boolean> => {
   return true;
 };
 
-export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: string; pushed: boolean }> => {
+export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: string; pushed: boolean; pushError?: string }> => {
   const merged = { ...getGitConfig(), ...cfg };
   if (!merged.remoteUrl) throw new Error('Git 仓库 URL 未配置');
+  if (!merged.token) throw new Error('Git Personal Access Token 未配置');
 
   const dir = ensureGitWorkdir();
   const fs = await import('fs');
@@ -278,6 +285,20 @@ export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: 
     } catch {}
   }
 
+  const remoteUrlWithAuth = merged.remoteUrl.replace(
+    'https://',
+    `https://${encodeURIComponent(merged.token)}:x-oauth-basic@`,
+  );
+
+  try {
+    const remotes = await git.listRemotes({ fs, dir });
+    const origin = remotes.find((r: any) => r.remote === 'origin');
+    if (origin) {
+      await git.deleteRemote({ fs, dir, remote: 'origin' });
+    }
+    await git.addRemote({ fs, dir, remote: 'origin', url: remoteUrlWithAuth });
+  } catch {}
+
   await writeRepoFiles(dir);
 
   await git.add({ fs, dir, filepath: '.' });
@@ -292,6 +313,7 @@ export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: 
   });
 
   let pushed = false;
+  let pushError: string | undefined;
   try {
     await git.push({
       fs,
@@ -299,16 +321,17 @@ export const pushToGit = async (cfg?: Partial<GitConfig>): Promise<{ commitOid: 
       dir,
       remote: 'origin',
       ref: merged.branch || 'main',
-      onAuth: () => ({ username: merged.username || merged.token, password: merged.token }),
       force: true,
     });
     pushed = true;
-  } catch (err) {
-    logger.warn('Git push 失败:', err);
+  } catch (err: any) {
+    const raw = err?.data?.response || err?.message || String(err);
+    pushError = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    logger.warn('Git push 失败:', pushError);
   }
 
-  syncStore.set('gitLastSyncAt', new Date().toISOString());
-  return { commitOid, pushed };
+  getSyncStore().set('gitLastSyncAt', new Date().toISOString());
+  return { commitOid, pushed, pushError };
 };
 
 export const getSyncStatus = () => ({
