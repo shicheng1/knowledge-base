@@ -310,6 +310,7 @@ export interface FeedItem {
   importedItemId: number | null;
   metadata: string | null;
   isRead: boolean;
+  isStarred: boolean;
   createdAt: string;
   source?: FeedSource;
 }
@@ -345,6 +346,7 @@ export interface FeedQueryOptions {
   keyword?: string;
   importedOnly?: boolean;
   unimportedOnly?: boolean;
+  starredOnly?: boolean;
 }
 
 export interface PresetFeedSource {

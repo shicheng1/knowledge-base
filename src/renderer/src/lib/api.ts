@@ -251,7 +251,7 @@ export const feedApi = {
   deleteSource: (id: number) => window.api.feed.deleteSource(id),
   batchDeleteSources: (ids: number[]) => window.api.feed.batchDeleteSources(ids),
   toggleSource: (id: number) => window.api.feed.toggleSource(id),
-  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => window.api.feed.getItems(options),
+  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean; starredOnly?: boolean }) => window.api.feed.getItems(options),
   importItem: (feedItemId: number, folderId?: number) => window.api.feed.importItem(feedItemId, folderId),
   batchImport: (feedItemIds: number[], folderId?: number) => window.api.feed.batchImport(feedItemIds, folderId),
   refreshAll: () => window.api.feed.refreshAll(),
@@ -260,6 +260,8 @@ export const feedApi = {
   translateItem: (feedItemId: number) => window.api.feed.translateItem(feedItemId),
   getPresetSources: () => window.api.feed.getPresetSources(),
   importOpml: (content: string) => window.api.feed.importOpml(content),
+  extractContent: (url: string) => window.api.feed.extractContent(url),
+  toggleStar: (id: number) => window.api.feed.toggleStar(id),
 };
 
 /* ================================================================== */

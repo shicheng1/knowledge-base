@@ -60,7 +60,7 @@ export interface FeedApi {
   deleteSource: (id: number) => Promise<any>;
   batchDeleteSources: (ids: number[]) => Promise<any>;
   toggleSource: (id: number) => Promise<any>;
-  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => Promise<any>;
+  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean; starredOnly?: boolean }) => Promise<any>;
   importItem: (feedItemId: number, folderId?: number) => Promise<any>;
   batchImport: (feedItemIds: number[], folderId?: number) => Promise<any>;
   refreshAll: () => Promise<any>;
@@ -69,6 +69,8 @@ export interface FeedApi {
   translateItem: (feedItemId: number) => Promise<any>;
   getPresetSources: () => Promise<any>;
   importOpml: (content: string) => Promise<any>;
+  toggleStar: (id: number) => Promise<any>;
+  extractContent: (url: string) => Promise<any>;
 }
 
 export interface ElectronApi {

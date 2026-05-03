@@ -1,0 +1,19 @@
+- [x] translate-service.ts 中 translateText 能正确调用 MyMemory API 翻译英文到中文
+- [x] translateFeedItem 能翻译标题和摘要并缓存到 metadata
+- [x] 翻译结果缓存后再次点击翻译直接返回缓存，不重复调用 API
+- [x] fetchGitHubTrending 能正确解析 GitHub Trending Weekly 页面提取仓库列表
+- [x] GitHub Trending 条目包含：仓库名、描述、语言、Star 数、URL
+- [x] refreshSource 中 github 类型分支调用 fetchGitHubTrending 而非 fetchGitHubStars
+- [x] fetchGitHubStars 和 getGitHubToken 函数已删除
+- [x] importFeedItem 入库前检查 items 表是否已有相同 URL，已存在则跳过
+- [x] feed:syncGitHubStars IPC 已替换为 feed:syncGitHubTrending
+- [x] feed:translateItem IPC handler 正确注册
+- [x] Preload API 中 syncGitHubStars 替换为 syncGitHubTrending，新增 translateItem
+- [x] FeedApi 类型定义已更新
+- [x] feedApi 封装已更新
+- [x] FeedView 每个卡片有"翻译"按钮
+- [x] 点击翻译后显示中文标题和摘要，可切换原文/译文
+- [x] 翻译失败时显示错误提示
+- [x] 设置页面 GitHub Token 配置已移除，替换为"启用 GitHub Trending"按钮
+- [x] 迁移 011 正确更新已有 github 类型源的 URL 和名称
+- [x] npm run build 编译通过无错误

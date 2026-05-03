@@ -1,0 +1,13 @@
+- [x] GitHub Trending HTML 解析正则修复后能正确提取仓库列表
+- [x] feed.repo.ts 中 clearImportedItemId 方法正确实现
+- [x] item.repo.ts 删除条目时调用 clearImportedItemId 清除关联
+- [x] 迁移 012 清理已有的孤立 imported_item_id 记录
+- [x] FeedView 点击标题在软件内 webview 预览而非外部浏览器
+- [x] webview 预览面板有关闭按钮和"外部打开"按钮
+- [x] parseOpmlAndImport 能正确解析 OPML XML 提取订阅源
+- [x] OPML 导入跳过已存在的 URL
+- [x] feed:importOpml IPC handler 正确注册
+- [x] Preload API 新增 importOpml 方法
+- [x] 设置页面有"导入 OPML"按钮
+- [x] OPML 导入后显示导入结果（成功/跳过/失败数）
+- [x] npm run build 编译通过无错误

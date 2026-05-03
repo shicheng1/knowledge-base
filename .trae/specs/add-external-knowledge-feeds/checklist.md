@@ -1,0 +1,24 @@
+- [x] 数据库迁移 010 正确创建 feed_sources 和 feed_items 表，字段和索引完整
+- [x] items 表 source_type 枚举已扩展包含 'rss' 和 'github'
+- [x] FeedSource 和 FeedItem 类型定义在 types.ts 中完整且与数据库表结构一致
+- [x] RSS Feed 解析功能正常：能解析标准 RSS 2.0 和 Atom 格式的 Feed
+- [x] GitHub Star 同步功能正常：通过 PAT 获取 Star 列表并增量同步
+- [x] feed.repo.ts 的 CRUD 操作全部可用：创建、查询、更新、删除订阅源和条目
+- [x] feed-items 查询支持分页、按类型/来源/关键词/入库状态筛选
+- [x] feed-item 去重机制正常：相同 URL 不会重复入库 feed_items
+- [x] 单条入库功能正常：feed_item 入库后生成 items 记录，imported_item_id 正确关联
+- [x] 批量入库功能正常：多条 feed_item 批量导入，进度反馈正确
+- [x] IPC handlers 全部注册：feed:getSources, feed:addSource, feed:updateSource, feed:deleteSource, feed:toggleSource, feed:getItems, feed:importItem, feed:batchImport, feed:refreshAll, feed:refreshSource, feed:syncGitHubStars, feed:getPresetSources
+- [x] Preload API 正确暴露所有 feed 方法到渲染进程
+- [x] feedApi 在 api.ts 中完整封装
+- [x] FeedView 页面正确展示知识流条目列表，按时间倒序
+- [x] FeedView 筛选功能正常：按来源类型、订阅源、关键词筛选
+- [x] FeedView 入库操作正常：单条入库和批量入库均可使用
+- [x] FeedView 手动刷新功能正常
+- [x] /feed 路由正确注册并可访问
+- [x] 侧边栏"知识流"导航入口显示正确，图标和文字无误
+- [x] 设置页面"知识来源"区域完整：RSS 订阅源管理、GitHub Token 配置、预置源列表
+- [x] 预置 AI 订阅源可一键添加
+- [x] 应用启动时自动拉取订阅源内容
+- [x] 定时刷新机制正常工作（默认 60 分钟间隔）
+- [x] npm run build 编译通过无错误

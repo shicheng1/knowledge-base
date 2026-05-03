@@ -305,10 +305,15 @@ ALTER TABLE items MODIFY COLUMN \`source_type\` ENUM('web', 'file', 'clipboard',
   },
   {
     name: '017_alter_feed_items_author_to_text',
-    sql: [
-      `ALTER TABLE feed_items MODIFY COLUMN author VARCHAR(500) NULL COMMENT '作者'`,
-      `ALTER TABLE items MODIFY COLUMN author VARCHAR(500) NULL COMMENT '作者'`,
-    ],
+    sql: `ALTER TABLE feed_items MODIFY COLUMN author VARCHAR(500) NULL COMMENT '作者'`,
+  },
+  {
+    name: '018_add_feed_items_fulltext_index',
+    sql: `ALTER TABLE feed_items ADD FULLTEXT INDEX ft_feed_items_title_summary (title, summary) WITH PARSER ngram`,
+  },
+  {
+    name: '019_add_feed_items_is_starred',
+    sql: `ALTER TABLE feed_items ADD COLUMN is_starred TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否标星'`,
   }
 ];
 

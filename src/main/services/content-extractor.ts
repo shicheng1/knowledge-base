@@ -113,12 +113,20 @@ function fetchUrlContent(
   client: typeof https | typeof http
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    const timeoutMs = 10_000
+    const timeoutMs = 30_000
     const maxRedirects = 5
     let redirectCount = 0
 
-    const makeRequest = (currentUrl: string) => {
-      const req = client.get(currentUrl, { timeout: timeoutMs }, (res) => {
+    const makeRequest = (currentUrl: string, currentClient?: typeof https | typeof http) => {
+      const activeClient = currentClient || client
+      const req = activeClient.get(currentUrl, {
+        timeout: timeoutMs,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        },
+      }, (res) => {
         // Handle redirects
         if (
           res.statusCode &&
@@ -143,7 +151,7 @@ function fetchUrlContent(
           // Switch client if protocol changes (http -> https or vice versa)
           const redirectParsed = new URL(redirectUrl)
           const redirectClient = redirectParsed.protocol === 'https:' ? https : http
-          makeRequest(redirectUrl)
+          makeRequest(redirectUrl, redirectClient)
           return
         }
 

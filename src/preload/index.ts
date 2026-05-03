@@ -184,7 +184,7 @@ const api = {
     deleteSource: (id: number) => invoke('feed:deleteSource', { id }),
     batchDeleteSources: (ids: number[]) => invoke('feed:batchDeleteSources', { ids }),
     toggleSource: (id: number) => invoke('feed:toggleSource', { id }),
-    getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => invoke('feed:getItems', options),
+    getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean; starredOnly?: boolean }) => invoke('feed:getItems', options),
     importItem: (feedItemId: number, folderId?: number) => invoke('feed:importItem', { feedItemId, folderId }),
     batchImport: (feedItemIds: number[], folderId?: number) => invoke('feed:batchImport', { feedItemIds, folderId }),
     refreshAll: () => invoke('feed:refreshAll'),
@@ -193,6 +193,8 @@ const api = {
     translateItem: (feedItemId: number) => invoke('feed:translateItem', { feedItemId }),
     getPresetSources: () => invoke('feed:getPresetSources'),
     importOpml: (content: string) => invoke('feed:importOpml', { content }),
+    toggleStar: (id: number) => invoke('feed:toggleStar', { id }),
+    extractContent: (url: string) => invoke('feed:extractContent', { url }),
   },
 
   // ── 事件监听（带频道白名单验证） ─────────────────────────

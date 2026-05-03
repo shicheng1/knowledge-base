@@ -1,0 +1,25 @@
+# Checklist
+
+- [x] `feed_sources` 表新增 `category VARCHAR(100) NULL` 列（迁移 013 可正常执行）
+- [x] `FeedSource` 类型定义包含 `category: string | null` 字段
+- [x] `CreateFeedSourceDTO` 和 `UpdateFeedSourceDTO` 包含 `category` 可选字段
+- [x] `feedRepo.create()` 支持写入 `category` 字段
+- [x] `feedRepo.update()` 支持更新 `category` 字段
+- [x] `feedRepo.batchDelete(ids)` 方法正确删除多个源及其关联的 feed_items
+- [x] IPC handler `feed:batchDeleteSources` 注册并正常工作
+- [x] `feed:addSource` 支持 `category` 参数
+- [x] `feed:updateSource` 支持 `category` 参数
+- [x] Preload 层暴露 `batchDeleteSources` API
+- [x] `feedApi` 包含 `batchDeleteSources` 方法
+- [x] FeedView 支持视图模式切换（内容列表 <-> 知识源管理）
+- [x] 知识源管理视图包含添加源表单（名称、URL、类型、分类）
+- [x] 知识源管理视图中的源列表显示分类标签
+- [x] 知识源管理视图支持按分类筛选
+- [x] 知识源管理视图支持多选和批量删除
+- [x] 知识源管理视图支持单源删除（带确认）
+- [x] 知识源管理视图支持启用/禁用切换
+- [x] 知识源管理视图保留 OPML 导入功能
+- [x] 知识源管理视图保留预置源一键添加功能
+- [x] SettingsView 知识来源区域精简为 GitHub Trending + 跳转按钮
+- [x] SettingsView 中"前往知识流管理知识源"按钮可正确跳转到 `/feed`
+- [x] TypeScript 编译无错误
