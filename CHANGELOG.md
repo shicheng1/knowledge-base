@@ -90,6 +90,62 @@
 
 ***
 
+## v2.3.0 (2026-05-03)
+
+### 新增功能
+
+- **RSS/Atom 订阅源** — 支持订阅外部 RSS/Atom 订阅源，自动解析和同步文章内容。新增 FeedView 页面展示订阅内容列表。
+- **内容翻译** — 集成翻译服务，支持将文章内容翻译成中文。
+- **订阅源管理** — 设置页面新增订阅源管理卡片，支持添加、编辑、删除订阅源，配置刷新间隔。
+
+### 数据库变更
+
+| 迁移               | 内容                                            |
+| ------------------ | ----------------------------------------------- |
+| 009\_feed\_sources | 新增 `feed_sources` 表（订阅源配置）             |
+| 010\_feed_entries  | 新增 `feed_entries` 表（订阅文章条目）           |
+
+### IPC 通道新增
+
+| 通道                          | 说明                                |
+| ----------------------------- | ----------------------------------- |
+| `feed:getAll`                 | 获取所有订阅源                      |
+| `feed:create`                 | 创建订阅源                          |
+| `feed:update`                 | 更新订阅源                          |
+| `feed:delete`                 | 删除订阅源                          |
+| `feed:refresh`                | 刷新指定订阅源                      |
+| `feed:refreshAll`             | 刷新所有订阅源                      |
+| `feed:getEntries`             | 获取订阅文章列表                    |
+| `translate:translateText`     | 翻译文本内容                        |
+
+### 文件变更汇总
+
+| 操作 | 文件                                                            |
+| ---- | --------------------------------------------------------------- |
+| 新增 | `src/main/database/repositories/feed.repo.ts`                  |
+| 新增 | `src/main/ipc/feed.ipc.ts`                                      |
+| 新增 | `src/main/services/feed-service.ts`                             |
+| 新增 | `src/main/services/translate-service.ts`                        |
+| 新增 | `src/renderer/src/views/FeedView.tsx`                           |
+| 修改 | `src/main/database/migrations/index.ts` — 009/010 迁移          |
+| 修改 | `src/main/database/types.ts` — Feed 类型定义                    |
+| 修改 | `src/main/ipc/index.ts` — 注册 feed handlers                   |
+| 修改 | `src/preload/index.ts` — feed/translate API 暴露               |
+| 修改 | `src/preload/types.ts` — 添加 feed/translate 类型              |
+| 修改 | `src/renderer/src/App.tsx` — 注册 FeedView 路由                |
+| 修改 | `src/renderer/src/lib/api.ts` — 添加 feed/translate 方法        |
+| 修改 | `src/renderer/src/components/layout/Sidebar.tsx` — 订阅源入口    |
+| 修改 | `src/renderer/src/views/SettingsView.tsx` — 订阅源管理卡片      |
+
+### 依赖变更
+
+| 操作 | 包名                       | 用途                                |
+| ---- | -------------------------- | ----------------------------------- |
+| 新增 | `rss-parser@^3`            | RSS/Atom 订阅源解析                 |
+| 新增 | `google-translate-api-x@^11` | 翻译服务                            |
+
+---
+
 ## v1.2.2 (2026-04-30)
 
 ### 新增功能

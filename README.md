@@ -37,6 +37,8 @@
 | 配置存储 | electron-store v8 | 本地持久化配置 |
 | 图表 | Recharts | 统计仪表盘可视化 |
 | OCR | Tesseract.js | 图片文字识别（中英文） |
+| RSS/Atom | rss-parser | 订阅源解析 |
+| 翻译 | google-translate-api-x | 文章内容翻译 |
 | 打包 | electron-builder (NSIS) | Windows 安装包 |
 | 浏览器扩展 | Chrome Manifest V3 + Native Messaging | 网页保存 |
 
@@ -88,7 +90,9 @@ knowledge-base/
 │   │       ├── ocr-service.ts         # 图片 OCR 识别 (Tesseract.js)
 │   │       ├── obsidian-importer.ts   # Obsidian Vault 导入
 │   │       ├── bookmark-importer.ts   # 浏览器书签导入
-│   │       └── export-service.ts      # 条目导出 (Markdown/JSON/ZIP)
+│   │       ├── export-service.ts      # 条目导出 (Markdown/JSON/ZIP)
+│   │       ├── feed-service.ts        # RSS/Atom 订阅源服务
+│   │       └── translate-service.ts   # 翻译服务
 │   │   ├── shortcut-manager.ts        # 全局快捷键管理
 │   ├── preload/                       # 预加载脚本
 │   │   ├── index.ts                   # contextBridge API 暴露
@@ -119,7 +123,8 @@ knowledge-base/
 │               ├── SearchView.tsx      # 搜索页
 │               ├── SettingsView.tsx    # 设置页
 │               ├── QuickCaptureView.tsx# 快速捕获窗口
-│               └── StatsView.tsx       # 统计仪表盘页
+│               ├── StatsView.tsx       # 统计仪表盘页
+│               └── FeedView.tsx        # RSS/Atom 订阅源页面
 ├── extension/                         # Chrome 浏览器扩展
 │   ├── manifest.json                  # Manifest V3 配置
 │   ├── background.js                  # Service Worker
