@@ -38,7 +38,9 @@ export type SourceType =
   | 'clipboard'
   | 'api'
   | 'import'
-  | 'manual';
+  | 'manual'
+  | 'rss'
+  | 'github';
 
 /** Item entity */
 export interface Item {
@@ -271,3 +273,84 @@ export interface SuccessResult<T = unknown> {
 
 /** Union type for IPC handler results */
 export type IpcResult<T = unknown> = SuccessResult<T> | ErrorResult;
+
+// ============================================================
+// Feed Sources & Feed Items
+// ============================================================
+
+export type FeedSourceType = 'rss' | 'github';
+
+export interface FeedSource {
+  id: number;
+  name: string;
+  url: string;
+  type: FeedSourceType;
+  description: string | null;
+  iconUrl: string | null;
+  siteUrl: string | null;
+  category: string | null;
+  enabled: boolean;
+  fetchIntervalMinutes: number;
+  lastFetchedAt: string | null;
+  failCount: number;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FeedItem {
+  id: number;
+  sourceId: number;
+  title: string;
+  url: string;
+  summary: string | null;
+  author: string | null;
+  publishedAt: string | null;
+  contentHash: string | null;
+  importedItemId: number | null;
+  metadata: string | null;
+  isRead: boolean;
+  createdAt: string;
+  source?: FeedSource;
+}
+
+export interface CreateFeedSourceDTO {
+  name: string;
+  url: string;
+  type: FeedSourceType;
+  description?: string | null;
+  iconUrl?: string | null;
+  siteUrl?: string | null;
+  category?: string | null;
+  enabled?: boolean;
+  fetchIntervalMinutes?: number;
+}
+
+export interface UpdateFeedSourceDTO {
+  name?: string;
+  url?: string;
+  description?: string | null;
+  iconUrl?: string | null;
+  siteUrl?: string | null;
+  category?: string | null;
+  enabled?: boolean;
+  fetchIntervalMinutes?: number;
+}
+
+export interface FeedQueryOptions {
+  page?: number;
+  pageSize?: number;
+  sourceId?: number | null;
+  sourceType?: FeedSourceType | null;
+  keyword?: string;
+  importedOnly?: boolean;
+  unimportedOnly?: boolean;
+}
+
+export interface PresetFeedSource {
+  name: string;
+  url: string;
+  description: string;
+  siteUrl: string;
+  category?: string;
+}

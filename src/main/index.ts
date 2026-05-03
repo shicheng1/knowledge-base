@@ -44,6 +44,7 @@ import { extractFromHtml } from './services/content-extractor';
 import { startNativeMessagingHost as startNativeMsgHost } from './services/native-messaging';
 import { startHttpServer } from './integrations/http-server';
 import { registerShortcut, unregisterShortcut } from './shortcut-manager';
+import * as feedService from './services/feed-service';
 
 // ---------------------------------------------------------------------------
 // 单实例锁 + 命令行参数预处理
@@ -388,6 +389,11 @@ async function initializeApp(): Promise<void> {
 
     await runMigrations();
     logger.info('数据库迁移完成');
+
+    feedService.refreshAllSources().catch((err) => {
+      console.error('[Feed] Startup refresh failed:', err);
+    });
+    feedService.startAutoRefresh();
   } catch (error) {
     logger.error('数据库初始化失败:', error);
     logger.warn('将在无数据库连接状态下启动应用');

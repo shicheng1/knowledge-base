@@ -19,7 +19,7 @@ interface MigrationRecord {
 /** 迁移定义：名称 + SQL 内容 */
 interface Migration {
   name: string;
-  sql: string;
+  sql: string | string[];
 }
 
 /** 所有迁移（SQL 内联） */
@@ -223,6 +223,92 @@ ALTER TABLE items ADD INDEX idx_items_daily_date (daily_date);
 ALTER TABLE items ADD COLUMN reading_progress DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '阅读进度百分比';
 ALTER TABLE items ADD INDEX idx_items_reading_progress (reading_progress);
     `.trim()
+  },
+  {
+    name: '010_feed_sources_and_items',
+    sql: `
+CREATE TABLE IF NOT EXISTS \`feed_sources\` (
+  \`id\` BIGINT AUTO_INCREMENT COMMENT '订阅源ID',
+  \`name\` VARCHAR(255) NOT NULL COMMENT '订阅源名称',
+  \`url\` VARCHAR(2048) NOT NULL COMMENT 'Feed URL 或 GitHub API URL',
+  \`type\` ENUM('rss', 'github') NOT NULL DEFAULT 'rss' COMMENT '来源类型',
+  \`description\` TEXT NULL COMMENT '订阅源描述',
+  \`icon_url\` VARCHAR(2048) NULL COMMENT '图标URL',
+  \`site_url\` VARCHAR(2048) NULL COMMENT '网站URL',
+  \`enabled\` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+  \`fetch_interval_minutes\` INT NOT NULL DEFAULT 60 COMMENT '拉取间隔（分钟）',
+  \`last_fetched_at\` DATETIME NULL COMMENT '上次拉取时间',
+  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  \`updated_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (\`id\`),
+  INDEX \`idx_feed_sources_type\` (\`type\`),
+  INDEX \`idx_feed_sources_enabled\` (\`enabled\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅源表';
+
+CREATE TABLE IF NOT EXISTS \`feed_items\` (
+  \`id\` BIGINT AUTO_INCREMENT COMMENT '条目ID',
+  \`source_id\` BIGINT NOT NULL COMMENT '所属订阅源ID',
+  \`title\` VARCHAR(500) NOT NULL COMMENT '标题',
+  \`url\` VARCHAR(2048) NOT NULL COMMENT '原文URL',
+  \`summary\` TEXT NULL COMMENT '摘要',
+  \`author\` VARCHAR(255) NULL COMMENT '作者',
+  \`published_at\` DATETIME NULL COMMENT '发布时间',
+  \`content_hash\` VARCHAR(64) NULL COMMENT '内容哈希（去重用）',
+  \`imported_item_id\` BIGINT NULL COMMENT '入库后的知识条目ID',
+  \`metadata\` JSON NULL COMMENT '扩展元数据',
+  \`is_read\` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读',
+  \`created_at\` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (\`id\`),
+  INDEX \`idx_feed_items_source_id\` (\`source_id\`),
+  INDEX \`idx_feed_items_published_at\` (\`published_at\`),
+  INDEX \`idx_feed_items_imported\` (\`imported_item_id\`),
+  INDEX \`idx_feed_items_url\` (\`url\`(500)),
+  CONSTRAINT \`fk_feed_items_source\`
+    FOREIGN KEY (\`source_id\`) REFERENCES \`feed_sources\` (\`id\`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订阅条目表';
+
+ALTER TABLE items MODIFY COLUMN \`source_type\` ENUM('web', 'file', 'clipboard', 'api', 'import', 'manual', 'rss', 'github') NULL COMMENT '来源类型';
+    `.trim()
+  },
+  {
+    name: '011_update_github_sources_to_trending',
+    sql: [
+      `UPDATE feed_sources SET url = 'https://github.com/trending?since=weekly', name = 'GitHub Trending (Weekly)' WHERE type = 'github'`,
+    ],
+  },
+  {
+    name: '012_cleanup_orphaned_imported_item_ids',
+    sql: [
+      `UPDATE feed_items SET imported_item_id = NULL WHERE imported_item_id IS NOT NULL AND imported_item_id NOT IN (SELECT id FROM items)`,
+    ],
+  },
+  {
+    name: '013_add_feed_source_category',
+    sql: `ALTER TABLE feed_sources ADD COLUMN category VARCHAR(100) NULL COMMENT '知识源分类'`,
+  },
+  {
+    name: '014_alter_items_summary_to_text',
+    sql: `ALTER TABLE items MODIFY COLUMN summary TEXT NULL COMMENT '摘要'`,
+  },
+  {
+    name: '015_alter_feed_items_summary_to_text',
+    sql: `ALTER TABLE feed_items MODIFY COLUMN summary TEXT NULL COMMENT '摘要'`,
+  },
+  {
+    name: '016_add_feed_source_error_tracking',
+    sql: [
+      `ALTER TABLE feed_sources ADD COLUMN fail_count INT NOT NULL DEFAULT 0 COMMENT '连续失败次数'`,
+      `ALTER TABLE feed_sources ADD COLUMN last_error VARCHAR(500) NULL COMMENT '最近错误信息'`,
+    ],
+  },
+  {
+    name: '017_alter_feed_items_author_to_text',
+    sql: [
+      `ALTER TABLE feed_items MODIFY COLUMN author VARCHAR(500) NULL COMMENT '作者'`,
+      `ALTER TABLE items MODIFY COLUMN author VARCHAR(500) NULL COMMENT '作者'`,
+    ],
   }
 ];
 
@@ -267,9 +353,9 @@ async function executeMigration(pool: Pool, migration: Migration): Promise<void>
     return;
   }
 
-  // 按分号拆分语句逐条执行（避免多语句执行问题）
-  const statements = migration.sql
-    .split(';')
+  const sqlList = Array.isArray(migration.sql) ? migration.sql : [migration.sql]
+  const statements = sqlList
+    .flatMap(s => s.split(';'))
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 

@@ -13,6 +13,7 @@ import {
   Trash2,
   BarChart3,
   Network,
+  Rss,
   Calendar,
   CheckSquare,
 } from 'lucide-react';
@@ -323,6 +324,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { to: '/', label: '全部条目', icon: Home },
     { to: '/favorites', label: '收藏', icon: Star },
+    { to: '/feed', label: '知识流', icon: Rss },
     { to: '/graph', label: '知识图谱', icon: Network },
     { to: '/stats', label: '统计', icon: BarChart3 },
     { to: '/search', label: '搜索', icon: Search },

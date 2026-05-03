@@ -244,6 +244,24 @@ export const integration = {
   unregisterContextMenu: () => window.api.integration.unregisterContextMenu(),
 };
 
+export const feedApi = {
+  getSources: () => window.api.feed.getSources(),
+  addSource: (data: { name: string; url: string; type: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => window.api.feed.addSource(data),
+  updateSource: (id: number, data: { name?: string; url?: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => window.api.feed.updateSource(id, data),
+  deleteSource: (id: number) => window.api.feed.deleteSource(id),
+  batchDeleteSources: (ids: number[]) => window.api.feed.batchDeleteSources(ids),
+  toggleSource: (id: number) => window.api.feed.toggleSource(id),
+  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => window.api.feed.getItems(options),
+  importItem: (feedItemId: number, folderId?: number) => window.api.feed.importItem(feedItemId, folderId),
+  batchImport: (feedItemIds: number[], folderId?: number) => window.api.feed.batchImport(feedItemIds, folderId),
+  refreshAll: () => window.api.feed.refreshAll(),
+  refreshSource: (sourceId: number) => window.api.feed.refreshSource(sourceId),
+  syncGitHubTrending: () => window.api.feed.syncGitHubTrending(),
+  translateItem: (feedItemId: number) => window.api.feed.translateItem(feedItemId),
+  getPresetSources: () => window.api.feed.getPresetSources(),
+  importOpml: (content: string) => window.api.feed.importOpml(content),
+};
+
 /* ================================================================== */
 /*  事件 (Events)                                                      */
 /* ================================================================== */

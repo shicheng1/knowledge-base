@@ -177,6 +177,24 @@ const api = {
     gitPush: (cfg?: any) => invoke('sync:gitPush', cfg),
   },
 
+  feed: {
+    getSources: () => invoke('feed:getSources'),
+    addSource: (data: { name: string; url: string; type: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => invoke('feed:addSource', data),
+    updateSource: (id: number, data: { name?: string; url?: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => invoke('feed:updateSource', { id, ...data }),
+    deleteSource: (id: number) => invoke('feed:deleteSource', { id }),
+    batchDeleteSources: (ids: number[]) => invoke('feed:batchDeleteSources', { ids }),
+    toggleSource: (id: number) => invoke('feed:toggleSource', { id }),
+    getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => invoke('feed:getItems', options),
+    importItem: (feedItemId: number, folderId?: number) => invoke('feed:importItem', { feedItemId, folderId }),
+    batchImport: (feedItemIds: number[], folderId?: number) => invoke('feed:batchImport', { feedItemIds, folderId }),
+    refreshAll: () => invoke('feed:refreshAll'),
+    refreshSource: (sourceId: number) => invoke('feed:refreshSource', { sourceId }),
+    syncGitHubTrending: () => invoke('feed:syncGitHubTrending'),
+    translateItem: (feedItemId: number) => invoke('feed:translateItem', { feedItemId }),
+    getPresetSources: () => invoke('feed:getPresetSources'),
+    importOpml: (content: string) => invoke('feed:importOpml', { content }),
+  },
+
   // ── 事件监听（带频道白名单验证） ─────────────────────────
   on: (channel: string, callback: (...args: any[]) => void) => {
     if (ALLOWED_CHANNELS.includes(channel)) {

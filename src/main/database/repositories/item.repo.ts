@@ -1,5 +1,6 @@
 import { query } from '../connection';
 import type { ResultSetHeader } from 'mysql2/promise';
+import { feedRepo } from './feed.repo';
 import type {
   Item,
   CreateItemDTO,
@@ -674,6 +675,7 @@ export class ItemRepository {
       await query(`DELETE FROM item_tags WHERE item_id = ?`, [id]);
       await query(`DELETE FROM attachments WHERE item_id = ?`, [id]);
       await query(`DELETE FROM items WHERE id = ?`, [id]);
+      await feedRepo.clearImportedItemId(id);
     } catch (error) {
       throw new Error(
         `Failed to permanently delete item ${id}: ${error instanceof Error ? error.message : String(error)}`

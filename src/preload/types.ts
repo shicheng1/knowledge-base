@@ -53,6 +53,24 @@ export interface ShellApi {
   isRegistered: () => Promise<any>;
 }
 
+export interface FeedApi {
+  getSources: () => Promise<any>;
+  addSource: (data: { name: string; url: string; type: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => Promise<any>;
+  updateSource: (id: number, data: { name?: string; url?: string; description?: string; iconUrl?: string; siteUrl?: string; category?: string; enabled?: boolean; fetchIntervalMinutes?: number }) => Promise<any>;
+  deleteSource: (id: number) => Promise<any>;
+  batchDeleteSources: (ids: number[]) => Promise<any>;
+  toggleSource: (id: number) => Promise<any>;
+  getItems: (options?: { page?: number; pageSize?: number; sourceId?: number; sourceType?: string; keyword?: string; importedOnly?: boolean; unimportedOnly?: boolean }) => Promise<any>;
+  importItem: (feedItemId: number, folderId?: number) => Promise<any>;
+  batchImport: (feedItemIds: number[], folderId?: number) => Promise<any>;
+  refreshAll: () => Promise<any>;
+  refreshSource: (sourceId: number) => Promise<any>;
+  syncGitHubTrending: () => Promise<any>;
+  translateItem: (feedItemId: number) => Promise<any>;
+  getPresetSources: () => Promise<any>;
+  importOpml: (content: string) => Promise<any>;
+}
+
 export interface ElectronApi {
   item: ItemApi;
   folder: FolderApi;
@@ -60,6 +78,7 @@ export interface ElectronApi {
   settings: SettingsApi;
   file: FileApi;
   shell: ShellApi;
+  feed: FeedApi;
   on: (channel: string, callback: (...args: any[]) => void) => void;
   off: (channel: string, callback: (...args: any[]) => void) => void;
 }

@@ -10,6 +10,7 @@ import { registerImportHandlers } from './import.ipc';
 import { registerEditorHandlers } from './editor.ipc';
 import { registerSyncHandlers } from './sync.ipc';
 import { registerArchiveHandlers } from './archive.ipc';
+import { registerFeedHandlers } from './feed.ipc';
 
 export function registerIpcHandlers(): void {
   registerItemHandlers();
@@ -24,4 +25,5 @@ export function registerIpcHandlers(): void {
   registerEditorHandlers();
   registerSyncHandlers();
   registerArchiveHandlers();
+  registerFeedHandlers();
 }

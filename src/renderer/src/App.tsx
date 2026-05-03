@@ -12,6 +12,7 @@ import QuickCaptureView from './views/QuickCaptureView';
 import GraphView from './views/GraphView';
 import DailyNoteView from './views/DailyNoteView';
 import TodoView from './views/TodoView';
+import FeedView from './views/FeedView';
 
 const App: React.FC = () => {
   return (
@@ -33,6 +34,7 @@ const App: React.FC = () => {
             <Route path="daily" element={<DailyNoteView />} />
             <Route path="daily/:date" element={<DailyNoteView />} />
             <Route path="todos" element={<TodoView />} />
+            <Route path="feed" element={<FeedView />} />
           </Route>
         </Routes>
       </HashRouter>

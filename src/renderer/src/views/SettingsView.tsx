@@ -14,6 +14,7 @@ import {
   Cloud,
   GitBranch,
   Archive,
+  Rss,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -97,6 +98,9 @@ const SettingsView: React.FC = () => {
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [archiveResult, setArchiveResult] = useState<string | null>(null);
 
+  const [trendingLoading, setTrendingLoading] = useState(false);
+  const [trendingMessage, setTrendingMessage] = useState<{ ok: boolean; msg: string } | null>(null);
+
   /* 加载已有设置 */
   useEffect(() => {
     const loadSettings = async () => {
@@ -147,6 +151,7 @@ const SettingsView: React.FC = () => {
         if (status?.git?.config) setGitCfg(status.git.config);
         if (status?.git?.lastSyncAt) setGitLastSyncAt(status.git.lastSyncAt);
       } catch {}
+
     };
     loadSettings();
   }, []);
@@ -1084,6 +1089,59 @@ const SettingsView: React.FC = () => {
             >
               {archiveResult}
             </div>
+          )}
+        </section>
+
+        {/* ── 知识来源 ─────────────────────────────────────────── */}
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <Rss className="h-5 w-5 text-orange-500" />
+            <h2 className="text-lg font-semibold text-gray-800">知识来源</h2>
+          </div>
+
+          <p className="mb-4 text-sm text-gray-500">
+            管理 RSS 订阅源和 GitHub Trending，获取 AI 技术领域的最新内容。
+          </p>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled={trendingLoading}
+              onClick={async () => {
+                setTrendingLoading(true);
+                setTrendingMessage(null);
+                try {
+                  const res = await window.api.feed.syncGitHubTrending();
+                  if (res?.success === false) {
+                    setTrendingMessage({ ok: false, msg: res.error || '同步失败' });
+                  } else {
+                    setTrendingMessage({ ok: true, msg: '同步成功' });
+                  }
+                } catch (err) {
+                  setTrendingMessage({ ok: false, msg: '同步失败' });
+                } finally {
+                  setTrendingLoading(false);
+                }
+              }}
+              className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:opacity-50"
+            >
+              {trendingLoading ? '同步中...' : '启用 GitHub Trending'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                window.location.hash = '#/feed';
+              }}
+              className="rounded-md bg-orange-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-700"
+            >
+              前往知识流管理知识源
+            </button>
+          </div>
+
+          {trendingMessage && (
+            <p className={`mt-3 text-sm ${trendingMessage.ok ? 'text-green-600' : 'text-red-600'}`}>
+              {trendingMessage.msg}
+            </p>
           )}
         </section>
 
