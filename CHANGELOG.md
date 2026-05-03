@@ -90,6 +90,59 @@
 
 ***
 
+## v2.4.0 (2026-05-03)
+
+### 新增功能
+
+- **SM2 间隔复习系统** — 基于 SuperMemo SM-2 算法的闪卡复习功能，支持今日待复习、评分反馈、自动计算下次复习时间间隔。
+- **Obsidian 风格 Callout** — Markdown 编辑器支持 `>[!note/info/tip/warning/danger]` 等 callout 语法，提供彩色高亮样式。
+- **复习视图 (Review)** — 专门的复习页面，展示待复习卡片列表，支持点击开始复习。
+- **最近视图 (Recent)** — 快速访问最近编辑或查看的条目。
+- **悬停预览 (HoverPreview)** — 鼠标悬停时显示条目内容预览。
+- **查询视图 (QueryView)** — 支持高级查询语法筛选条目。
+
+### 数据库变更
+
+| 迁移               | 内容                                            |
+| ------------------ | ----------------------------------------------- |
+| 011\_review\_cards | 新增 `review_cards` 表（闪卡复习记录）           |
+
+### IPC 通道新增
+
+| 通道                          | 说明                                |
+| ----------------------------- | ----------------------------------- |
+| `review:getDueCards`          | 获取今日待复习卡片                  |
+| `review:createCard`           | 创建闪卡                            |
+| `review:updateCard`           | 更新闪卡（SM2 评分）                |
+| `review:deleteCard`           | 删除闪卡                            |
+| `review:getStats`             | 获取复习统计                        |
+| `review:getCardsByItem`       | 获取条目的所有闪卡                  |
+
+### 文件变更汇总
+
+| 操作 | 文件                                                            |
+| ---- | --------------------------------------------------------------- |
+| 新增 | `src/main/ipc/review.ipc.ts`                                    |
+| 新增 | `src/main/services/sm2.ts`                                      |
+| 新增 | `src/renderer/src/views/ReviewView.tsx`                         |
+| 新增 | `src/renderer/src/views/RecentView.tsx`                          |
+| 新增 | `src/renderer/src/components/common/HoverPreview.tsx`           |
+| 新增 | `src/renderer/src/components/common/QueryView.tsx`              |
+| 新增 | `src/renderer/src/components/common/CalloutRenderer.tsx`        |
+| 新增 | `src/renderer/src/lib/remarkCallout.ts`                         |
+| 新增 | `src/renderer/src/lib/queryParser.ts`                           |
+| 新增 | `src/renderer/src/lib/readingTime.ts`                           |
+| 新增 | `src/renderer/src/lib/remarkWikiLink.ts`                        |
+| 新增 | `src/renderer/src/lib/template.ts`                              |
+| 修改 | `src/main/database/migrations/index.ts` — 011_review_cards      |
+| 修改 | `src/main/ipc/index.ts` — 注册 review handlers                 |
+| 修改 | `src/preload/index.ts` — review API 暴露                        |
+| 修改 | `src/preload/types.ts` — review 类型定义                         |
+| 修改 | `src/renderer/src/App.tsx` — 注册 Review/Recent 路由           |
+| 修改 | `src/renderer/src/components/layout/Sidebar.tsx` — 复习入口    |
+
+---
+
 ## v2.3.0 (2026-05-03)
 
 ### 新增功能
